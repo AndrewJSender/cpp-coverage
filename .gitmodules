@@ -1,0 +1,3 @@
+[submodule "submodules/cmake-project-generator"]
+	path = submodules/cmake-project-generator
+	url = git@github.com:AndrewJSender/cmake-project-generator.git

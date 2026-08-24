@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "Generate Project",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "example/submodules/cmake-project-generator/src/generate.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "--source-dir=${workspaceFolder}/example",
+        "--build-dir=${workspaceFolder}/example/build"
+      ]
+    }
+  ]
+}

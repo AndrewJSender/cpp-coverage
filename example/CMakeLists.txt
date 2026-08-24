@@ -15,4 +15,7 @@ add_subdirectory(submodules/googletest EXCLUDE_FROM_ALL)
 enable_testing()
 
 # Add your source files here
-add_executable(test_example main.cpp)
+add_executable(test_example main.cpp tests.cpp)
+
+target_link_libraries(test_example PRIVATE GTest::gtest_main)
+

@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "Coordinate.h"
+#include "./Coordinate.hpp"
 
 Coordinate::Coordinate(double x, double y) : m_x(x), m_y(y) {}
 

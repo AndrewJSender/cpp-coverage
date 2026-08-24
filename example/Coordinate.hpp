@@ -8,7 +8,7 @@ public:
 
     void set(double x, double y);
 
-    double distanceTo(const Coordinate& other);
+    double distanceTo(const Coordinate& other) const;
 
 private:
     double m_x;

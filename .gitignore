@@ -1,3 +1,6 @@
 
 # MacOS Finder.app
 .DS_Store
+
+# Build Output
+build*

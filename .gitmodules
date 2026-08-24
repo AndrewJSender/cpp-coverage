@@ -4,3 +4,6 @@
 [submodule "example/submodules/cmake-project-generator"]
 	path = example/submodules/cmake-project-generator
 	url = git@github.com:AndrewJSender/cmake-project-generator.git
+[submodule "example/submodules/gtest_stream_receiver"]
+	path = example/submodules/gtest_stream_receiver
+	url = git@github.com:AndrewJSender/gtest_stream_receiver.git

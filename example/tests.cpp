@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "./Coordinate.hpp"
+#include "Coordinate.hpp"
 
 TEST(SampleTest, Addition) {
   bool condition = 1 + 1 == 2;

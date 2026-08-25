@@ -11,11 +11,14 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 # Add the submodule directory to your build (EXCLUDE_FROM_ALL prevents building targets you don't use)
 add_subdirectory(submodules/googletest EXCLUDE_FROM_ALL)
 
+add_library(coordinates lib/Coordinate.cpp)
+target_include_directories(coordinates PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 # Enable testing capabilities in CMake
 enable_testing()
 
 # Add your source files here
-add_executable(test_example main.cpp tests.cpp Coordinate.hpp Coordinate.cpp)
+add_executable(test_example main.cpp tests.cpp)
 
 target_link_libraries(test_example PRIVATE GTest::gtest_main)
-
+target_link_libraries(test_example PRIVATE coordinates)

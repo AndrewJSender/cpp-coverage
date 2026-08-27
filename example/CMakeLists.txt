@@ -20,5 +20,9 @@ enable_testing()
 # Add your source files here
 add_executable(test_example main.cpp tests.cpp)
 
+# Clang Code Coverage
+target_compile_options(test_example PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+target_link_options(test_example PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+
 target_link_libraries(test_example PRIVATE GTest::gtest_main)
 target_link_libraries(test_example PRIVATE coordinates)

@@ -8,6 +8,7 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "args": [
+        // "--help",
         "--source-dir=${workspaceFolder}/example",
         "--build-dir=${workspaceFolder}/build"
       ]

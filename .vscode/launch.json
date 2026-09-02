@@ -9,7 +9,7 @@
       "cwd": "${workspaceFolder}",
       "args": [
         "--source-dir=${workspaceFolder}/example",
-        "--build-dir=${workspaceFolder}/example/build"
+        "--build-dir=${workspaceFolder}/build"
       ]
     }
   ]

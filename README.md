@@ -1,1 +1,3 @@
 # coverage-analytics
+
+# Example

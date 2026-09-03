@@ -1,0 +1,120 @@
+import subprocess
+import os
+from pathlib import Path
+
+import metabuild.public as mb
+
+mb.load("//lcov_cobertura", "LcovCobertura")
+
+def llvm_profile_path():
+    llvm_profile_file = Path(os.environ.get("LLVM_PROFILE_FILE"))
+    return llvm_profile_file
+
+
+def run_subprocess(cmd_parts, out_path):
+    with open(out_path, "w") as outfile:
+        mb.log.debug(f"Running: {' '.join(cmd_parts)}")
+        subprocess.run(cmd_parts, stdout=outfile)
+
+
+async def profile_llvm_data(
+    ctx,
+    platform,
+    test_path,
+    build_info,
+    output_directory,
+    gen_html=False,
+    gen_lcov=False,
+    gen_lcov_to_cobertura=False,
+):
+    project_root = Path(build_info["project_root"])
+    ignore_filename_regex = f"{project_root}/{output_directory}"
+    coverage_file_path = llvm_profile_path()
+    profile_stem = coverage_file_path.stem
+    test_output_path = coverage_file_path.parent
+
+    if platform in ["macos", "ios"]:
+        llvm_profdata = await ctx.eval_async("$(xcode_tool llvm-profdata)")
+        llvm_cov = await ctx.eval_async("$(xcode_tool llvm-cov)")
+        llvm_cxxfilt = await ctx.eval_async("$(xcode_tool c++filt)")
+    elif platform in ["win32"]:
+        msvs_path = await ctx.eval_async("$(msvs_install_dir)")
+        ignore_filename_regex = f"{project_root}\\{output_directory}"
+        ignore_filename_regex = ignore_filename_regex.replace("\\", "\\\\")
+        llvm_profdata = await ctx.eval_async(
+            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-profdata.exe"
+        )
+        llvm_cov = await ctx.eval_async(
+            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-cov.exe"
+        )
+        llvm_cxxfilt = await ctx.eval_async(
+            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-cxxfilt.exe"
+        )
+
+    elif platform in ["linux"]:
+        llvm_bin_path = await ctx.eval_async("/usr/lib/llvm-18/bin")
+        llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata")
+        llvm_cov = await ctx.eval_async(f"{llvm_bin_path}/llvm-cov")
+        llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/c++filt")
+    else:
+        mb.log.warn(f"platform {platform} not suppoted")
+        return
+
+    llvm_cov_common_args = [
+        f"--instr-profile={test_output_path}/{profile_stem}.profdata",
+        f"--ignore-filename-regex={ignore_filename_regex}",
+        f"{test_path}",
+    ]
+
+    llvm_profdata_merge_cmd = [
+        llvm_profdata,
+        "merge",
+        "-sparse",
+        f"{test_output_path}/{profile_stem}.profraw",
+        "-o",
+        f"{test_output_path}/{profile_stem}.profdata",
+    ]
+
+    await ctx.execute(llvm_profdata_merge_cmd)
+
+    details_json_path = Path(f"{test_output_path}", "coverage_details.json")
+    details_cmd = [llvm_cov, "export", "--format=text"] + llvm_cov_common_args
+    run_subprocess(details_cmd, details_json_path)
+
+    if gen_lcov or gen_lcov_to_cobertura:
+        mb.log.info("Generating lcov data")
+        export_lcov_cmd = [llvm_cov, "export", "--format=lcov"] + llvm_cov_common_args
+        lcov_path = Path(f"{test_output_path}", "coverage.lcov")
+        run_subprocess(export_lcov_cmd, lcov_path)
+
+    if gen_lcov_to_cobertura:
+        mb.log.info("Generating lcov to cobertura data")
+        xml_path = Path(f"{test_output_path}", "coverage.xml")
+        demangle = True
+        base_dir = project_root.__str__()
+        excludes = []
+        with open(lcov_path, 'r') as lcov_file:
+            lcov_data = lcov_file.read()
+            lcov_cobertura = LcovCobertura(lcov_data, base_dir, excludes, demangle, llvm_cxxfilt)
+            cobertura_xml = lcov_cobertura.convert()
+        with open(xml_path, mode='wt') as output_file:
+            output_file.write(cobertura_xml)
+
+
+    llvm_cov_common_args.append("--summary-only")
+    summary_json_path = Path(f"{test_output_path}", "coverage_summary.json")
+    summary_cmd = [llvm_cov, "export", "--format=text"] + llvm_cov_common_args
+    run_subprocess(summary_cmd, summary_json_path)
+
+    if gen_html:
+        await ctx.execute(
+            [
+                llvm_cov,
+                "show",
+                f"--output-dir={test_output_path}/coverage_html",
+                "--format=html",
+            ]
+            + llvm_cov_common_args
+        )
+
+    return (details_json_path, summary_json_path)

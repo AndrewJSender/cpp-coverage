@@ -1,0 +1,59 @@
+/* Light mode */
+@media (prefers-color-scheme: light) {
+    body {
+        background-color: white;
+        color: black;
+    }
+
+    tr:nth-child(even) {
+        background-color: #bbecec;
+    }
+
+    #summary_table_header {
+        background-color: white;
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: rgb(16, 16, 16);
+        color: rgb(214, 214, 214);
+    }
+
+    a {
+        color: rgb(0, 255, 255);
+    }
+
+    tr:nth-child(even) {
+        background-color: #232a2a;
+    }
+
+    #summary_table_header {
+        background-color: #232a2a;
+    }
+}
+
+table {
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+
+#summary_table_header {
+    position: sticky;
+    top: 0;
+}
+
+th,
+td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid;
+}
+
+
+tbody {
+    max-height: 300px;
+    overflow-y: auto;
+}

@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(ENABLE_COVERAGE "Enable LLVM or Bullseye coverage instrumentation" OFF)
 set(COVERAGE_TOOL "llvm" CACHE STRING "Coverage tool (llvm or bullseye)")
 set_property(CACHE COVERAGE_TOOL PROPERTY STRINGS llvm bullseye)
-set(COVERAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/coverage")
 
 # Prevent GoogleTest from overriding your project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -59,11 +58,12 @@ if(ENABLE_COVERAGE AND COVERAGE_TOOL STREQUAL "llvm")
         message(FATAL_ERROR "LLVM coverage requires llvm-profdata and llvm-cov")
     endif()
 
-    file(MAKE_DIRECTORY "${COVERAGE_OUTPUT_DIR}")
-    set(LLVM_PROFILE "${COVERAGE_OUTPUT_DIR}/coverage.profraw")
     set(PROFILE_COMMANDS)
     set(PROFILE_TARGETS)
     foreach(sample_target IN LISTS SAMPLE_UNIT_TEST_LIST)
+        set(COVERAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/${sample_target}_output")
+        file(MAKE_DIRECTORY "${COVERAGE_OUTPUT_DIR}")
+        set(LLVM_PROFILE "${COVERAGE_OUTPUT_DIR}/coverage.profraw")
         if(TARGET ${sample_target})
             list(APPEND PROFILE_TARGETS ${sample_target})
             list(APPEND PROFILE_COMMANDS

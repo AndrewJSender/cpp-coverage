@@ -22,8 +22,8 @@
       "cwd": "${workspaceFolder}",
       "args": [
         // "--help",
-        "--test-binary=${workspaceFolder}/build/submodules/googletest/googletest/Debug/sample2_unittest",
-        "--output-directory=/Users/sender/Downloads/test_output2",
+        "--test-binary=${workspaceFolder}/build/submodules/googletest/googletest/Debug/sample1_unittest",
+        "--output-directory=/Users/sender/Downloads/sample1_unittest",
       ],
     }
   ]

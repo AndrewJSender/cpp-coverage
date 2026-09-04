@@ -1,7 +1,8 @@
 
 import json
+import logging
 
-import metabuild.public as mb
+logger = logging.getLogger(__name__)
 
 async def get_ios_device(ctx, device_name, is_sim=False, exact_match_only=False):
     stdout = await ctx.execute(["xcrun", "xcdevice", "list"])
@@ -22,8 +23,10 @@ async def get_ios_device(ctx, device_name, is_sim=False, exact_match_only=False)
     if len(candidates) > 0 and not exact_match_only:
         first_key = next(iter(candidates.keys()))
         first_value = candidates[first_key]
-        mb.log.debug(
-            f"WARNING: Exact match not found for device name. Using device {first_key} ({first_value})."
+        logger.warning(
+            "Exact match not found for device name. Using device %s (%s).",
+            first_key,
+            first_value,
         )
         return first_value
 

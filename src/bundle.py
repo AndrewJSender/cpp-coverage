@@ -1,12 +1,10 @@
-import metabuild.public as mb
-
 import json
 from pathlib import Path
 import platform
 
 BUILD_INFO_FILENAME = "build_info.json"
 
-async def get_git_commit(ctx: mb.GenRulePyContext) -> str:
+async def get_git_commit(ctx) -> str:
     git_cmd = "git rev-parse HEAD"
     git_commit = await ctx.execute(git_cmd.split(" "))
     git_commit = git_commit.replace("\n", "")
@@ -21,8 +19,7 @@ async def build_info_dict(branch_name: str, build_number: int, project_root: Pat
         "git_commit": git_commit,
     }
 
-async def gen_build_info(ctx: mb.GenRulePyContext):
-    mb.log.debug("Generating build info")
+async def gen_build_info(ctx):
     output_file = Path(ctx.outputs[0])
     project_root = Path(await ctx.eval_async(ctx.args["project_root"])).resolve()
     git_commit = await get_git_commit(ctx)

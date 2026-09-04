@@ -1,19 +1,22 @@
 import subprocess
 import os
 from pathlib import Path
+import logging
 
-import metabuild.public as mb
+from lcov_cobertura import LcovCobertura
 
-mb.load("//lcov_cobertura", "LcovCobertura")
+logger = logging.getLogger(__name__)
 
 def llvm_profile_path():
-    llvm_profile_file = Path(os.environ.get("LLVM_PROFILE_FILE"))
+    llvm_profile_file = os.environ.get("LLVM_PROFILE_FILE")
+    if llvm_profile_file is None:
+        raise ValueError("LLVM_PROFILE_FILE environment variable is not set")
     return llvm_profile_file
 
 
 def run_subprocess(cmd_parts, out_path):
     with open(out_path, "w") as outfile:
-        mb.log.debug(f"Running: {' '.join(cmd_parts)}")
+        logger.debug("Running: %s", " ".join(cmd_parts))
         subprocess.run(cmd_parts, stdout=outfile)
 
 
@@ -57,7 +60,7 @@ async def profile_llvm_data(
         llvm_cov = await ctx.eval_async(f"{llvm_bin_path}/llvm-cov")
         llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/c++filt")
     else:
-        mb.log.warn(f"platform {platform} not suppoted")
+        logger.warning("platform %s not supported", platform)
         return
 
     llvm_cov_common_args = [
@@ -81,14 +84,14 @@ async def profile_llvm_data(
     details_cmd = [llvm_cov, "export", "--format=text"] + llvm_cov_common_args
     run_subprocess(details_cmd, details_json_path)
 
+    lcov_path = Path(f"{test_output_path}", "coverage.lcov")
     if gen_lcov or gen_lcov_to_cobertura:
-        mb.log.info("Generating lcov data")
+        logger.info("Generating lcov data")
         export_lcov_cmd = [llvm_cov, "export", "--format=lcov"] + llvm_cov_common_args
-        lcov_path = Path(f"{test_output_path}", "coverage.lcov")
         run_subprocess(export_lcov_cmd, lcov_path)
 
     if gen_lcov_to_cobertura:
-        mb.log.info("Generating lcov to cobertura data")
+        logger.info("Generating lcov to cobertura data")
         xml_path = Path(f"{test_output_path}", "coverage.xml")
         demangle = True
         base_dir = project_root.__str__()

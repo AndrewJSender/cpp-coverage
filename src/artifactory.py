@@ -4,8 +4,9 @@ import json
 import zipfile
 import os
 from pathlib import Path
+import logging
 
-import metabuild.public as mb
+logger = logging.getLogger(__name__)
 
 
 def request_attempt(request: Request) -> dict:
@@ -82,14 +83,14 @@ def get_directory_contents(api_key: str, aql: str, artifactory_root) -> list:
 
 async def download_zip(artifactory_api_key, url, zip_dir_path: Path):
     zip_file_name = url.split("/")[-1]
-    mb.log.debug(f"Downloading {zip_file_name} to {zip_dir_path}")
+    logger.debug("Downloading %s to %s", zip_file_name, zip_dir_path)
     curl_cmd = f'curl -H "X-JFrog-Art-Api: {artifactory_api_key}" -O {url}'
     os.chdir(zip_dir_path)
     os.system(curl_cmd)
     return zip_dir_path / zip_file_name
 
 async def extract_zip(zip_file_path: Path, unzip_path: Path):
-    mb.log.debug(f"Unzipping {zip_file_path} to {unzip_path}")
+    logger.debug("Unzipping %s to %s", zip_file_path, unzip_path)
     zip_filename = zip_file_path.stem
     with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
         unzip_result_path = Path(unzip_path, zip_filename)

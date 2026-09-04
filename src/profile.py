@@ -2,27 +2,15 @@ import json
 from pathlib import Path
 import re
 import xml.etree.ElementTree as XmlET
+import logging
 
-import metabuild.public as mb
+from options import COVERAGE_OPTION_NAME, CLANG_STR, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR
+from llvm import profile_llvm_data
+from open_cpp_coverage import profile_open_cpp_coverage_data
+from bullseye import export_to_xml
+from cobertura import adjust_xml_file, split_xml_data_to_json
 
-mb.load(
-    "code_coverage//options",
-    "COVERAGE_OPTION_NAME",
-    "CLANG_STR",
-    "OPEN_CPP_COVERAGE_STR",
-    "BULLSEYE_STR",
-)
-
-mb.load("//llvm", "profile_llvm_data")
-mb.load("//open_cpp_coverage", "profile_open_cpp_coverage_data")
-mb.load("//bullseye", "export_to_xml")
-mb.load("//cobertura", "adjust_xml_file", "split_xml_data_to_json")
-
-
-COVERAGE_OPTION_NAME: str
-CLANG_STR: str
-OPEN_CPP_COVERAGE_STR: str
-BULLSEYE_STR: str
+logger = logging.getLogger(__name__)
 
 
 async def adjust_file(file_path, build_info):
@@ -43,7 +31,7 @@ async def adjust_file(file_path, build_info):
 
 
 async def adjust_json_file(file_path, build_info):
-    mb.log.debug(f"Adjusting json file: {file_path}")
+    logger.debug("Adjusting json file: %s", file_path)
     with open(file_path, "r") as f:
         this_json = json.load(f)
     this_json["build_info"] = build_info
@@ -79,7 +67,7 @@ async def profile_data(
     gen_lcov_to_cobertura=False,
 ) -> None:
     tool = await ctx.eval_async(f"$(option {COVERAGE_OPTION_NAME})")
-    mb.log.debug("Generating profile data with tool: %s", tool)
+    logger.debug("Generating profile data with tool: %s", tool)
 
     if tool == OPEN_CPP_COVERAGE_STR:
         xml_path = await profile_open_cpp_coverage_data(ctx, build_info)
@@ -92,7 +80,7 @@ async def profile_data(
         xml_root = await adjust_xml_file(xml_path)
         await split_xml_data_to_json(xml_root, xml_path.parent, build_info)
     elif tool == CLANG_STR:
-        (details_json_path, summary_json_path) = await profile_llvm_data(
+        profile_paths = await profile_llvm_data(
             ctx,
             platform,
             test_path,
@@ -102,6 +90,9 @@ async def profile_data(
             gen_lcov=gen_lcov,
             gen_lcov_to_cobertura=gen_lcov_to_cobertura,
         )
+        if profile_paths is None:
+            raise RuntimeError("LLVM profiling did not return output paths")
+        details_json_path, summary_json_path = profile_paths
         await adjust_file(details_json_path, build_info)
         await adjust_file(summary_json_path, build_info)
 

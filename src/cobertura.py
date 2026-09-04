@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 import re
 import xml.etree.ElementTree as XmlET
-import metabuild.public as mb
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def split_xml_data_to_json(xml_root, output_path, build_info):
@@ -50,7 +52,7 @@ async def split_xml_data_to_json(xml_root, output_path, build_info):
 
 
 async def adjust_xml_file(file_path):
-    mb.log.debug(f"Adjusting xml file: {file_path}")
+    logger.debug("Adjusting xml file: %s", file_path)
     with open(file_path, "r") as f:
         txt = f.read()
     # remove whitespacing

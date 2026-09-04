@@ -1,7 +1,8 @@
 from pathlib import Path
 import os
+import logging
 
-import metabuild.public as mb
+logger = logging.getLogger(__name__)
 
 
 def coverage_file_path():
@@ -10,9 +11,9 @@ def coverage_file_path():
 
 
 async def profile_open_cpp_coverage_data(ctx, build_info):
-    mb.log.info("Generating OpenCppCoverage profile data")
+    logger.info("Generating OpenCppCoverage profile data")
     coverage_file = coverage_file_path()
-    mb.log.debug(f"coverage_file: {coverage_file}")
+    logger.debug("coverage_file: %s", coverage_file)
     test_output_path = coverage_file.parent
     export_xml_path = Path(test_output_path, "coverage_details.xml")
     open_cpp_cov_export_cmd = [

@@ -1,14 +1,14 @@
 import os
 import json
 from pathlib import Path
+import logging
 
-import metabuild.public as mb
+from artifactory import download_zip, extract_zip
+
+logger = logging.getLogger(__name__)
 
 ROOT_PATH = Path(__file__).resolve().parent.parent
 website_data_path = Path(ROOT_PATH, "website", "data")
-
-mb.load("code_coverage//artifactory", "download_zip", "extract_zip")
-
 
 def update_file_manifest(files_manifest: dict, root_path: Path, parent_path, file: str):
     if file == ".DS_Store":
@@ -42,14 +42,14 @@ async def generate_website(ctx, src_list, root_path: Path):
         json.dump(files_manifest, files_json_file)
 
 
-async def copy_local_data(ctx: mb.ExprContext):
-    mb.log.debug(f"Copying local data")
+async def copy_local_data(ctx):
+    logger.debug("Copying local data")
     src = Path(ctx.args["test_output_directory"])
     dst = Path(website_data_path, "local", src.name)
     manifest = {}
     manifest_json_path = Path(website_data_path, "manifest.json")
     
-    mb.log.debug(f"Copying {src} to {dst}")
+    logger.debug("Copying %s to %s", src, dst)
     await ctx.copy(src, dst)
 
     if manifest_json_path.exists():
@@ -71,12 +71,12 @@ async def copy_local_data(ctx: mb.ExprContext):
 
 
 async def download_remote_data(
-    ctx: mb.ExprContext,
+    ctx,
     artifactory_api_key: str,
     urls: list[str],
     appendage_bug: Path = None,
 ):
-    mb.log.debug(f"Downloading remote data")
+    logger.debug("Downloading remote data")
     zip_dir_path = website_data_path / "zipped_files"
     unzip_path = website_data_path / "unzipped_files"
 

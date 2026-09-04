@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+# Licensed under the MIT License. See LICENSE for details.
+
 COVERAGE_OPTION_NAME = "code_coverage//options:tool"
 COVERAGE_CONFIG_NAME = "code_coverage.tool"
 

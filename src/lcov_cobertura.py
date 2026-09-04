@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+# Licensed under the MIT License. See LICENSE for details.
+
 
 # Copyright 2011-2022 Eric Wendelin
 #

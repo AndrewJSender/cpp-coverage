@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+# Licensed under the MIT License. See LICENSE for details.
+
 """Generate LLVM coverage reports and the static coverage website data."""
 
 import argparse

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+# Licensed under the MIT License. See LICENSE for details.
+
 import os
 from pathlib import Path
 import logging

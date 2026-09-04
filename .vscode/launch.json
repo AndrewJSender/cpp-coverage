@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "name": "Generate Project",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "example/submodules/cmake-project-generator/src/generate.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        // "--help",
+        "--source-dir=${workspaceFolder}/example",
+        "--build-dir=${workspaceFolder}/build"
+      ]
+    },
+    {
+      "name": "Generate Profile Data",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "src/generate_profile.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        // "--help",
+        "--test-binary=${workspaceFolder}/build/submodules/googletest/googletest/Debug/sample1_unittest",
+        "--output-directory=/Users/sender/Downloads/sample1_unittest",
+      ],
+    }
+  ]
+}

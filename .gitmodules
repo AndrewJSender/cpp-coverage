@@ -1,3 +1,6 @@
-[submodule "submodules/cmake-project-generator"]
-	path = submodules/cmake-project-generator
+[submodule "examples/submodules/googletest"]
+	path = example/submodules/googletest
+	url = https://github.com/google/googletest.git
+[submodule "example/submodules/cmake-project-generator"]
+	path = example/submodules/cmake-project-generator
 	url = git@github.com:AndrewJSender/cmake-project-generator.git

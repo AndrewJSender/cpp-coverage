@@ -1,0 +1,52 @@
+<!-- Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+     Licensed under the MIT License. See LICENSE for details.
+-->
+
+<html>
+  <head>
+    <title>Code Coverage Results</title>
+    <script src="main.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body onload="on_load()">
+    <h1><a href="data">Code Coverage Results</a></h1>
+    <ul id="coverage_list"></ul>
+    <h1>Summary</h1>
+    <p>
+      Click
+      <a
+        href="http://clang.llvm.org/docs/SourceBasedCodeCoverage.html#interpreting-reports"
+        target="_blank"
+        >here</a
+      >
+      for information about interpreting this report.
+    </p>
+    <a id="parent_anchor">Go to parent .. </a>
+    <table id="summary_table">
+      <thead id="summary_table_header">
+        <tr>
+          <th>Path</th>
+          <th>Function Coverage</th>
+          <th>Line Coverage</th>
+          <th>Region Coverage</th>
+          <th>Branch Coverage</th>
+        </tr>
+      </thead>
+      <tbody id="summary_table_body"></tbody>
+    </table>
+    <div id="file_details_div">
+      <h1>File Details</h1>
+      <table id="file_details_table" hidden="true">
+        <thead id="file_details_table_header">
+          <tr>
+            <th>#</th>
+            <th>Code</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="file_details_table_body"></tbody>
+      </table>
+    </div>
+  </body>
+</html>

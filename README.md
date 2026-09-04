@@ -10,14 +10,16 @@ python $root_path/example/submodules/cmake-project-generator/src/generate.py \
 --build-dir=$root_path/build 
 ```
 
-## CMake coverage
-
-Configure with LLVM coverage enabled, then generate the profile report:
 
 ```sh
-cmake -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm
-cmake --build build --target generate_profile_data
+export LLVM_PROFILE_FILE=$HOME/Downloads/coverage.profraw
 ```
 
-The CMake `generate_profile_data` target replaces the former metabuild
-`mb.genrule` and writes reports under `build/coverage`.
+The script can also be run directly after an instrumented test has produced
+`coverage.profraw`:
+
+```sh
+python src/generate_profile.py \
+--test-binary=$root_path/build/submodules/googletest/googletest/Debug/sample1_unittest \
+--output-directory=$LLVM_PROFILE_FILE
+```

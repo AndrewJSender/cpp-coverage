@@ -68,21 +68,11 @@ if(ENABLE_COVERAGE AND COVERAGE_TOOL STREQUAL "llvm")
     set(LLVM_PROFILE "${COVERAGE_OUTPUT_DIR}/coverage.profraw")
     add_custom_target(generate_profile_data
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-        COMMAND ${LLVM_PROFDATA} merge -sparse
-            "${LLVM_PROFILE}"
-            -o "${COVERAGE_OUTPUT_DIR}/coverage.profdata"
-        COMMAND ${LLVM_COV} export --format=text
-            --instr-profile="${COVERAGE_OUTPUT_DIR}/coverage.profdata"
-            "$<TARGET_FILE:sample1_unittest>"
-            > "${COVERAGE_OUTPUT_DIR}/coverage_details.json"
-        COMMAND ${LLVM_COV} export --format=text --summary-only
-            --instr-profile="${COVERAGE_OUTPUT_DIR}/coverage.profdata"
-            "$<TARGET_FILE:sample1_unittest>"
-            > "${COVERAGE_OUTPUT_DIR}/coverage_summary.json"
-        COMMAND ${LLVM_COV} show --format=html
-            --output-dir="${COVERAGE_OUTPUT_DIR}/coverage_html"
-            --instr-profile="${COVERAGE_OUTPUT_DIR}/coverage.profdata"
-            "$<TARGET_FILE:sample1_unittest>"
+        COMMAND ${CMAKE_COMMAND} -E env
+            "LLVM_PROFILE_FILE=${LLVM_PROFILE}"
+            ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/../src/generate_profile.py"
+            --test-binary "$<TARGET_FILE:sample1_unittest>"
+            --output-directory "${COVERAGE_OUTPUT_DIR}"
         DEPENDS sample1_unittest
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
         USES_TERMINAL

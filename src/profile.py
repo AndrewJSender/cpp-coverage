@@ -58,6 +58,7 @@ async def split_details(details_json_path):
 
 async def profile_data(
     ctx,
+    tool,
     platform,
     test_path,
     build_info,
@@ -66,7 +67,6 @@ async def profile_data(
     gen_lcov=False,
     gen_lcov_to_cobertura=False,
 ) -> None:
-    tool = await ctx.eval_async(f"$(option {COVERAGE_OPTION_NAME})")
     logger.debug("Generating profile data with tool: %s", tool)
 
     if tool == OPEN_CPP_COVERAGE_STR:

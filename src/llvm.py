@@ -11,7 +11,7 @@ def llvm_profile_path():
     llvm_profile_file = os.environ.get("LLVM_PROFILE_FILE")
     if llvm_profile_file is None:
         raise ValueError("LLVM_PROFILE_FILE environment variable is not set")
-    return llvm_profile_file
+    return Path(llvm_profile_file)
 
 
 def run_subprocess(cmd_parts, out_path):

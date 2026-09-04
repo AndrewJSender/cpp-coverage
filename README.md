@@ -8,22 +8,22 @@ export root_path=$(pwd)
 export scheme="sample1_unittest"
 ```
 
-## Setup
-```zsh
-python $root_path/example/submodules/cmake-project-generator/src/generate.py \
---source-dir=$root_path/example \
---build-dir=$root_path/build 
-```
+### Setup with Clang Code Coverage
 
-### Turn on Clang Code Coverage
+Note: Generates the XCode Project for MacOS
+
 ```zsh
-cmake -S "$root_path/example" -B "$root_path/build" \
+cmake -G Xcode -S "$root_path/example" -B "$root_path/build" \
   -DENABLE_COVERAGE=ON \
   -DCOVERAGE_TOOL=llvm
 ```
 
-On macOS, CMake uses `xcrun` to locate `llvm-profdata` and `llvm-cov` when
-they are not already on `PATH`.
+## CMake Build, Test, Generate
+
+```zsh
+cmake --build "$root_path/build" --target generate_profile_data
+```
+
 
 ## Build
 ```
@@ -39,20 +39,10 @@ export LLVM_PROFILE_FILE="$HOME/Downloads/$scheme/coverage.profraw"
 ## Generate Profile & Website
 
 ```zsh
-cmake --build "$root_path/build" --target generate_profile_data
-```
-
-Alternatively, run the Python report generator after the instrumented test
-has created `coverage.profraw`:
-
-```zsh
 python src/generate_profile.py \
 --test-binary=$root_path/build/submodules/googletest/googletest/Debug/$scheme \
 --output-directory=$HOME/Downloads/$scheme
 ```
-
-Reports are written to `build/coverage`, and website data is written to
-`website/data`.
 
 ## Run Website Locally
 ```

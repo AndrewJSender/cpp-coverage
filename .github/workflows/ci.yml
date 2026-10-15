@@ -31,7 +31,7 @@ jobs:
         with:
           file: build/sample1_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample1_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample2_unittest
@@ -40,7 +40,7 @@ jobs:
         with:
           file: build/sample2_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample2_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample3_unittest
@@ -49,7 +49,7 @@ jobs:
         with:
           file: build/sample3_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample3_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample4_unittest
@@ -58,7 +58,7 @@ jobs:
         with:
           file: build/sample4_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample4_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample5_unittest
@@ -67,7 +67,7 @@ jobs:
         with:
           file: build/sample5_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample5_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample6_unittest
@@ -76,7 +76,7 @@ jobs:
         with:
           file: build/sample6_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample6_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample7_unittest
@@ -85,7 +85,7 @@ jobs:
         with:
           file: build/sample7_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample7_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample8_unittest
@@ -94,7 +94,7 @@ jobs:
         with:
           file: build/sample8_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample8_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample9_unittest
@@ -103,7 +103,7 @@ jobs:
         with:
           file: build/sample9_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample9_unittest
           fail-on-error: true
 
       - name: Upload coverage report of sample10_unittest
@@ -112,5 +112,5 @@ jobs:
         with:
           file: build/sample10_unittest_output/coverage.xml
           language: cpp
-          label: coverage
+          label: sample10_unittest
           fail-on-error: true

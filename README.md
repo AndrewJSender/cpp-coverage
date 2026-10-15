@@ -1,4 +1,4 @@
-# coverage-analytics
+# C++ Code Coverage
 
 A small coverage tooling project for generating coverage reports and a static website view from test outputs.
 
@@ -61,14 +61,14 @@ export LLVM_PROFILE_FILE="$test_output_path/coverage.profraw"
 
 ```zsh
 python src/generate_profile.py \
- --test-binary="$root_path/build/submodules/googletest/googletest/Debug/$scheme" \
+ --test-binary="$root_path/build/submodules/googletest/googletest/Debug/$target" \
  --output-directory="$test_output_path"
 ```
 
 ## Run Website Locally
 
 ```zsh
-open http://localhost:8000/website
+open http://localhost:8000/website/?path=./example/submodules/googletest/googletest/samples
 python -m http.server
 ```
 

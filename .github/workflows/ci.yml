@@ -32,7 +32,7 @@ jobs:
           file: build/sample1_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample2_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -41,7 +41,7 @@ jobs:
           file: build/sample2_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample3_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -50,7 +50,7 @@ jobs:
           file: build/sample3_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample4_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -59,7 +59,7 @@ jobs:
           file: build/sample4_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample5_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -68,7 +68,7 @@ jobs:
           file: build/sample5_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample6_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -77,7 +77,7 @@ jobs:
           file: build/sample6_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample7_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -86,7 +86,7 @@ jobs:
           file: build/sample7_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample8_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -95,7 +95,7 @@ jobs:
           file: build/sample8_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample9_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -104,7 +104,7 @@ jobs:
           file: build/sample9_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true
 
       - name: Upload coverage report of sample10_unittest
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -113,4 +113,4 @@ jobs:
           file: build/sample10_unittest_output/coverage.xml
           language: cpp
           label: coverage
-          fail-on-error: false
+          fail-on-error: true

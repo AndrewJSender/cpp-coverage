@@ -1,1 +1,1 @@
-{".": {"example": {"files": {"CMakeLists.txt": "./example/CMakeLists.txt", "main.cpp": "./example/main.cpp"}}}, "files": {}}
+{".": {"example": {"files": {"CMakeLists.txt": "./example/CMakeLists.txt"}, "include": {"files": {"my_lib.hpp": "./example/include/my_lib.hpp"}}, "src": {"files": {"my_lib.cpp": "./example/src/my_lib.cpp", "main.cpp": "./example/src/main.cpp"}}}}, "files": {}}

@@ -20,6 +20,7 @@ export root_path=$(pwd)
 Note: Generates the Xcode project for macOS.
 
 ```zsh
+export root_path=$(pwd)
 cmake -G Xcode -S "$root_path/example" -B "$root_path/build" \
  -DENABLE_COVERAGE=ON \
  -DCOVERAGE_TOOL=llvm
@@ -28,6 +29,7 @@ cmake -G Xcode -S "$root_path/example" -B "$root_path/build" \
 ### CMake Build, Test, Generate Coverage Data
 
 ```zsh
+export root_path=$(pwd)
 cmake --build "$root_path/build" --target generate_profile_data
 ```
 

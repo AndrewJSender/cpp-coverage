@@ -281,10 +281,8 @@ function on_load() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.has("path") ? urlParams.get("path") : ".";
-    const branch_or_commit = "main";
     init_parent_anchor(path);
 
-    let manifest_data = fetch("data/manifest.json").then(response => response.json())
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);
         handle_manifest(path, manifest_data);

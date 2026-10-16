@@ -1,6 +1,11 @@
-name: Build and run tests
+name: Continuous Integration
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
@@ -8,7 +13,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  build-and-test:
+  MacOS:
     runs-on: macos-latest
     steps:
       - name: Check out repository
@@ -16,19 +21,98 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Configure build
+      - name: Generate Project
         run: |
           cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm
 
-      - name: Build, run tests, and generate coverage
+      - name: Build, Run Tests, and Generate Coverage
         run: cmake --build build --config Debug --target generate_profile_data
 
-      - name: Zip the target folder
-        run: |
-          zip -r coverage_data.zip website/data
+      # - name: Zip the Target Folder
+      #   run: |
+      #     zip -r coverage_data.zip website/data
 
-      - name: Archive and Upload Code Coverage Data
-        uses: actions/upload-artifact@main
+      # - name: Archive and Upload Code Coverage Report
+      #   uses: actions/upload-artifact@main
+      #   with:
+      #     name: code-coverage-report
+      #     path: coverage_data.zip
+
+      - name: Upload Pages site
+        uses: actions/upload-artifact@v4
         with:
-          name: code-coverage-report
-          path: coverage_data.zip
+          name: coverage-website
+          path: website
+          if-no-files-found: error
+
+  deploy-pages:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: MacOS
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}${{ steps.preview.outputs.url-path }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download coverage website
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-website
+          path: coverage-website
+
+      - name: Select preview URL
+        id: preview
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ -z "$PR_NUMBER" ]]; then
+            echo "directory=." >> "$GITHUB_OUTPUT"
+            echo "url-path=" >> "$GITHUB_OUTPUT"
+          else
+            echo "directory=pr/$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "url-path=pr/$PR_NUMBER/" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Preserve coverage sites
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: coverage-website
+          target-folder: ${{ steps.preview.outputs.directory }}
+          clean-exclude: |
+            pr/
+
+      - name: Check out all published sites
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: pages-site
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload all Pages sites
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-site
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Report coverage URL
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          PREVIEW_PATH: ${{ steps.preview.outputs.url-path }}
+        run: |
+          printf '### Coverage preview\n\n%s%s\n' \
+            "${SITE_URL%/}/" "$PREVIEW_PATH" >> "$GITHUB_STEP_SUMMARY"

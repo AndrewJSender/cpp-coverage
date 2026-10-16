@@ -1,0 +1,178 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage
+  SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
+<coverage branch-rate="0.5746268656716418" branches-covered="77" branches-valid="134" complexity="0" line-rate="0.9861111111111112" lines-covered="71" lines-valid="72" timestamp="1792157382" version="2.0.3">
+	<sources>
+		<source>/Users/runner/work/cpp-coverage/cpp-coverage</source>
+	</sources>
+	<packages>
+		<package line-rate="0.9861111111111112" branch-rate="0.5746268656716418" name="example.submodules.googletest.googletest.samples" complexity="0">
+			<classes>
+				<class branch-rate="0.8846153846153846" complexity="0" filename="example/submodules/googletest/googletest/samples/prime_tables.h" line-rate="0.9736842105263158" name="example.submodules.googletest.googletest.samples.prime_tables.h">
+					<methods>
+						<method name="PrimeTable::~PrimeTable()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="42" branch="false"/>
+							</lines>
+						</method>
+						<method name="OnTheFlyPrimeTable::IsPrime(int) const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="26" number="55" branch="false"/>
+							</lines>
+						</method>
+						<method name="OnTheFlyPrimeTable::GetNextPrime(int) const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="66" branch="false"/>
+							</lines>
+						</method>
+						<method name="PreCalculatedPrimeTable::PreCalculatedPrimeTable(int)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="81" branch="false"/>
+							</lines>
+						</method>
+						<method name="PreCalculatedPrimeTable::CalculatePrimesUpTo(int)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="100" branch="false"/>
+							</lines>
+						</method>
+						<method name="PreCalculatedPrimeTable::~PreCalculatedPrimeTable()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="85" branch="false"/>
+							</lines>
+						</method>
+						<method name="PreCalculatedPrimeTable::IsPrime(int) const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="87" branch="false"/>
+							</lines>
+						</method>
+						<method name="PreCalculatedPrimeTable::GetNextPrime(int) const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="91" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="6" number="42"/>
+						<line branch="false" hits="26" number="55"/>
+						<line branch="true" hits="26" number="56" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="52" number="58" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="40" number="60" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="40" number="61"/>
+						<line branch="false" hits="12" number="63"/>
+						<line branch="false" hits="22" number="64"/>
+						<line branch="false" hits="6" number="66"/>
+						<line branch="true" hits="6" number="67" condition-coverage="50% (1/2)"/>
+						<line branch="false" hits="14" number="69"/>
+						<line branch="true" hits="14" number="70" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="14" number="71"/>
+						<line branch="false" hits="6" number="72"/>
+						<line branch="false" hits="3" number="81"/>
+						<line branch="false" hits="3" number="82"/>
+						<line branch="false" hits="3" number="83"/>
+						<line branch="false" hits="3" number="84"/>
+						<line branch="false" hits="3" number="85"/>
+						<line branch="false" hits="12" number="87"/>
+						<line branch="true" hits="12" number="88" condition-coverage="83% (5/6)"/>
+						<line branch="false" hits="12" number="89"/>
+						<line branch="false" hits="6" number="91"/>
+						<line branch="true" hits="14" number="92" condition-coverage="50% (1/2)"/>
+						<line branch="true" hits="14" number="93" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="14" number="94"/>
+						<line branch="false" hits="0" number="96"/>
+						<line branch="false" hits="6" number="97"/>
+						<line branch="false" hits="3" number="100"/>
+						<line branch="false" hits="3" number="101"/>
+						<line branch="false" hits="3" number="102"/>
+						<line branch="true" hits="51" number="106" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="48" number="107" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="4266" number="112" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="4233" number="113"/>
+						<line branch="false" hits="4233" number="114"/>
+						<line branch="false" hits="33" number="115"/>
+						<line branch="false" hits="3" number="116"/>
+					</lines>
+				</class>
+				<class branch-rate="0.5" complexity="0" filename="example/submodules/googletest/googletest/samples/sample7_unittest.cc" line-rate="1.0" name="example.submodules.googletest.googletest.samples.sample7_unittest.cc">
+					<methods>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7::~PrimeTableTestSmpl7()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="64" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7::SetUp()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="65" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7::TearDown()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="66" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7_ReturnsFalseForNonPrimes_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="2" number="75" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7_ReturnsTrueForPrimes_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="2" number="84" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::PrimeTableTestSmpl7_CanGetNextPrime_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="2" number="93" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:(anonymous namespace)::CreateOnTheFlyPrimeTable()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="51" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample7_unittest.cc:PrimeTable* (anonymous namespace)::CreatePreCalculatedPrimeTable&lt;1000ul&gt;()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="54" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="3" number="51"/>
+						<line branch="false" hits="3" number="54"/>
+						<line branch="false" hits="3" number="55"/>
+						<line branch="false" hits="3" number="56"/>
+						<line branch="false" hits="6" number="64"/>
+						<line branch="false" hits="6" number="65"/>
+						<line branch="false" hits="6" number="66"/>
+						<line branch="false" hits="6" number="67"/>
+						<line branch="false" hits="6" number="68"/>
+						<line branch="false" hits="6" number="69"/>
+						<line branch="false" hits="2" number="75"/>
+						<line branch="true" hits="2" number="76" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="77" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="78" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="79" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="80" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="81" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="2" number="82"/>
+						<line branch="false" hits="2" number="84"/>
+						<line branch="true" hits="2" number="85" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="86" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="87" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="88" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="89" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="90" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="2" number="91"/>
+						<line branch="false" hits="2" number="93"/>
+						<line branch="true" hits="2" number="94" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="95" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="96" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="97" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="98" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="2" number="99" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="2" number="100"/>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+</coverage>

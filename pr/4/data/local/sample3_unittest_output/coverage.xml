@@ -1,0 +1,208 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage
+  SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
+<coverage branch-rate="0.5945945945945946" branches-covered="44" branches-valid="74" complexity="0" line-rate="1.0" lines-covered="92" lines-valid="92" timestamp="1792157380" version="2.0.3">
+	<sources>
+		<source>/Users/runner/work/cpp-coverage/cpp-coverage</source>
+	</sources>
+	<packages>
+		<package line-rate="1.0" branch-rate="0.5945945945945946" name="example.submodules.googletest.googletest.samples" complexity="0">
+			<classes>
+				<class branch-rate="1.0" complexity="0" filename="example/submodules/googletest/googletest/samples/sample3-inl.h" line-rate="1.0" name="example.submodules.googletest.googletest.samples.sample3-inl.h">
+					<methods>
+						<method name="Queue&lt;int&gt;::Queue()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="75" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::~Queue()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="78" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::Clear()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="81" branch="false"/>
+							</lines>
+						</method>
+						<method name="QueueNode&lt;int&gt;::next()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="10" number="54" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::Enqueue(int const&amp;)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="114" branch="false"/>
+							</lines>
+						</method>
+						<method name="QueueNode&lt;int&gt;::QueueNode(int const&amp;)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="12" number="61" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::Size() const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="9" number="100" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::Dequeue()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="129" branch="false"/>
+							</lines>
+						</method>
+						<method name="QueueNode&lt;int&gt;::element() const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="11" number="51" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;* Queue&lt;int&gt;::Map&lt;int (*)(int)&gt;(int (*)(int)) const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="151" branch="false"/>
+							</lines>
+						</method>
+						<method name="Queue&lt;int&gt;::Head() const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="104" branch="false"/>
+							</lines>
+						</method>
+						<method name="QueueNode&lt;int&gt;::next() const" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="6" number="55" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="11" number="51"/>
+						<line branch="false" hits="10" number="54"/>
+						<line branch="false" hits="6" number="55"/>
+						<line branch="false" hits="12" number="61"/>
+						<line branch="false" hits="12" number="75"/>
+						<line branch="false" hits="12" number="78"/>
+						<line branch="false" hits="12" number="81"/>
+						<line branch="true" hits="12" number="82" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="7" number="84"/>
+						<line branch="false" hits="7" number="85"/>
+						<line branch="false" hits="10" number="86"/>
+						<line branch="false" hits="10" number="87"/>
+						<line branch="false" hits="10" number="88"/>
+						<line branch="true" hits="10" number="89" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="3" number="90"/>
+						<line branch="false" hits="3" number="91"/>
+						<line branch="false" hits="7" number="94"/>
+						<line branch="false" hits="7" number="95"/>
+						<line branch="false" hits="7" number="96"/>
+						<line branch="false" hits="12" number="97"/>
+						<line branch="false" hits="9" number="100"/>
+						<line branch="false" hits="6" number="104"/>
+						<line branch="false" hits="12" number="114"/>
+						<line branch="false" hits="12" number="115"/>
+						<line branch="true" hits="12" number="117" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="8" number="118"/>
+						<line branch="false" hits="8" number="119"/>
+						<line branch="false" hits="8" number="120"/>
+						<line branch="false" hits="4" number="121"/>
+						<line branch="false" hits="4" number="122"/>
+						<line branch="false" hits="4" number="123"/>
+						<line branch="false" hits="4" number="124"/>
+						<line branch="false" hits="12" number="125"/>
+						<line branch="false" hits="3" number="129"/>
+						<line branch="true" hits="3" number="130" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="131"/>
+						<line branch="false" hits="1" number="132"/>
+						<line branch="false" hits="2" number="134"/>
+						<line branch="false" hits="2" number="135"/>
+						<line branch="false" hits="2" number="136"/>
+						<line branch="true" hits="2" number="137" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="138"/>
+						<line branch="false" hits="1" number="139"/>
+						<line branch="false" hits="2" number="141"/>
+						<line branch="false" hits="2" number="142"/>
+						<line branch="false" hits="2" number="144"/>
+						<line branch="false" hits="3" number="145"/>
+						<line branch="false" hits="3" number="151"/>
+						<line branch="false" hits="3" number="152"/>
+						<line branch="true" hits="6" number="153" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="3" number="154"/>
+						<line branch="false" hits="3" number="155"/>
+						<line branch="false" hits="3" number="156"/>
+						<line branch="false" hits="3" number="158"/>
+						<line branch="false" hits="3" number="159"/>
+					</lines>
+				</class>
+				<class branch-rate="0.5161290322580645" complexity="0" filename="example/submodules/googletest/googletest/samples/sample3_unittest.cc" line-rate="1.0" name="example.submodules.googletest.googletest.samples.sample3_unittest.cc">
+					<methods>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3::SetUp()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="73" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3_DefaultConstructor_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="117" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3_Dequeue_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="123" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3_Map_Test::TestBody()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="141" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3::MapTester(Queue&lt;int&gt; const*)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="90" branch="false"/>
+							</lines>
+						</method>
+						<method name="sample3_unittest.cc:(anonymous namespace)::QueueTestSmpl3::Double(int)" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="3" number="87" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="3" number="73"/>
+						<line branch="false" hits="3" number="74"/>
+						<line branch="false" hits="3" number="75"/>
+						<line branch="false" hits="3" number="76"/>
+						<line branch="false" hits="3" number="77"/>
+						<line branch="false" hits="3" number="87"/>
+						<line branch="false" hits="3" number="90"/>
+						<line branch="false" hits="3" number="93"/>
+						<line branch="true" hits="3" number="96" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="3" number="99"/>
+						<line branch="true" hits="6" number="100" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="3" number="101" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="3" number="102"/>
+						<line branch="false" hits="3" number="104"/>
+						<line branch="false" hits="3" number="105"/>
+						<line branch="false" hits="1" number="117"/>
+						<line branch="true" hits="1" number="119" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="120"/>
+						<line branch="false" hits="1" number="123"/>
+						<line branch="false" hits="1" number="124"/>
+						<line branch="true" hits="1" number="125" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="127"/>
+						<line branch="true" hits="1" number="128" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="1" number="129" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="1" number="130" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="131"/>
+						<line branch="false" hits="1" number="133"/>
+						<line branch="true" hits="1" number="134" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="1" number="135" condition-coverage="100% (2/2)"/>
+						<line branch="true" hits="1" number="136" condition-coverage="100% (2/2)"/>
+						<line branch="false" hits="1" number="137"/>
+						<line branch="false" hits="1" number="138"/>
+						<line branch="false" hits="1" number="141"/>
+						<line branch="false" hits="1" number="142"/>
+						<line branch="false" hits="1" number="143"/>
+						<line branch="false" hits="1" number="144"/>
+						<line branch="false" hits="1" number="145"/>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+</coverage>

@@ -1,4 +1,4 @@
-# coverage-analytics
+# C++ Code Coverage
 
 A small coverage tooling project for generating coverage reports and a static website view from test outputs.
 
@@ -7,6 +7,8 @@ A small coverage tooling project for generating coverage reports and a static we
 This project reads coverage artifacts from tools such as LLVM, Bullseye, and OpenCppCoverage, converts them into a consistent summary format, and generates a local website for exploring the results.
 
 ## Example
+
+The example builds a single `coverage_example` executable from `example/src/main.cpp`.
 
 ### Constants
 ```zsh
@@ -18,14 +20,16 @@ export root_path=$(pwd)
 Note: Generates the Xcode project for macOS.
 
 ```zsh
+export root_path=$(pwd)
 cmake -G Xcode -S "$root_path/example" -B "$root_path/build" \
  -DENABLE_COVERAGE=ON \
  -DCOVERAGE_TOOL=llvm
 ```
 
-### CMake Build, Test, Generate All
+### CMake Build, Test, Generate Coverage Data
 
 ```zsh
+export root_path=$(pwd)
 cmake --build "$root_path/build" --target generate_profile_data
 ```
 
@@ -34,7 +38,7 @@ cmake --build "$root_path/build" --target generate_profile_data
 #### Select Target
 
 ```zsh
-export target="sample1_unittest"
+export target="coverage_example"
 ```
 
 #### Build by Xcode
@@ -54,23 +58,30 @@ cmake --build "$root_path/build" --target "$target"
 ```zsh
 export test_output_path="$root_path/build/$target""_output"
 export LLVM_PROFILE_FILE="$test_output_path/coverage.profraw"
-"$root_path/build/submodules/googletest/googletest/Debug/$target"
+"$root_path/build/Debug/$target"
 ```
 
 #### Generate Profile & Website
 
 ```zsh
 python src/generate_profile.py \
- --test-binary="$root_path/build/submodules/googletest/googletest/Debug/$scheme" \
+ --test-binary="$root_path/build/Debug/$target" \
  --output-directory="$test_output_path"
 ```
 
 ## Run Website Locally
 
 ```zsh
-open http://localhost:8000/website
+open http://localhost:8000/website/?path=./example
 python -m http.server
 ```
+
+The optional `source_root` field in `website/data/files.json` specifies the source
+directory URL relative to the website page. It should end with `/`. When omitted,
+the viewer retains the existing local source prefix, `../../../../`.
+The Deploy Pages job copies `example/` into each published site and sets
+`source_root` to `./` in the deployed metadata only, including for PR previews
+(for example, `pr/4/?path=./example/src/my_lib.cpp`).
 
 ## License
 

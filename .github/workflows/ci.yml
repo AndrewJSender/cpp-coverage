@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout
+        uses: actions/checkout@main
         with:
           submodules: recursive
 
@@ -28,7 +28,7 @@ jobs:
           zip -r coverage_data.zip website/data
 
       - name: Archive and Upload Code Coverage Data
-        uses: actions/upload-artifact
+        uses: actions/upload-artifact@main
         with:
           name: code-coverage-report
           path: coverage_data.zip

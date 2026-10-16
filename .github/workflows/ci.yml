@@ -12,16 +12,23 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout
         with:
           submodules: recursive
 
       - name: Configure build
         run: |
-          cmake -G Xcode -S example -B build \
-            -DENABLE_COVERAGE=ON \
-            -DCOVERAGE_TOOL=llvm
+          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm
 
       - name: Build, run tests, and generate coverage
         run: cmake --build build --config Debug --target generate_profile_data
 
+      - name: Zip the target folder
+        run: |
+          zip -r coverage_data.zip website/data
+
+      - name: Archive and Upload Code Coverage Data
+        uses: actions/upload-artifact
+        with:
+          name: code-coverage-report
+          path: coverage_data.zip

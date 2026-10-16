@@ -25,7 +25,7 @@ cmake -G Xcode -S "$root_path/example" -B "$root_path/build" \
  -DCOVERAGE_TOOL=llvm
 ```
 
-### CMake Build, Test, Generate All
+### CMake Build, Test, Generate Coverage Data
 
 ```zsh
 cmake --build "$root_path/build" --target generate_profile_data

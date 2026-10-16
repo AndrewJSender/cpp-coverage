@@ -8,6 +8,8 @@ This project reads coverage artifacts from tools such as LLVM, Bullseye, and Ope
 
 ## Example
 
+The example builds a single `coverage_example` executable from `example/main.cpp`.
+
 ### Constants
 ```zsh
 export root_path=$(pwd)
@@ -34,7 +36,7 @@ cmake --build "$root_path/build" --target generate_profile_data
 #### Select Target
 
 ```zsh
-export target="sample1_unittest"
+export target="coverage_example"
 ```
 
 #### Build by Xcode
@@ -54,21 +56,21 @@ cmake --build "$root_path/build" --target "$target"
 ```zsh
 export test_output_path="$root_path/build/$target""_output"
 export LLVM_PROFILE_FILE="$test_output_path/coverage.profraw"
-"$root_path/build/submodules/googletest/googletest/Debug/$target"
+"$root_path/build/Debug/$target"
 ```
 
 #### Generate Profile & Website
 
 ```zsh
 python src/generate_profile.py \
- --test-binary="$root_path/build/submodules/googletest/googletest/Debug/$target" \
+ --test-binary="$root_path/build/Debug/$target" \
  --output-directory="$test_output_path"
 ```
 
 ## Run Website Locally
 
 ```zsh
-open http://localhost:8000/website/?path=./example/submodules/googletest/googletest/samples
+open http://localhost:8000/website/?path=./example
 python -m http.server
 ```
 

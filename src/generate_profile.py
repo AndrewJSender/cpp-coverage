@@ -125,7 +125,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--source-directory",
         type=Path,
-        default="example/submodules/googletest/googletest/samples",
+        default="example",
         help="Directory containing the source code to analyze.  This is relative to the project root.",
     )
 

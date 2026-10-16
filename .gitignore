@@ -11,3 +11,5 @@ website/data/
 # Python Cache
 *__pycache__/
 
+# LLVM Coverage Output
+*.profraw

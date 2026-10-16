@@ -59,6 +59,12 @@ jobs:
           name: coverage-website
           path: coverage-website
 
+      - name: Include example sources in coverage website
+        run: |
+          cp -R example coverage-website/example
+          jq '.source_root = "./"' coverage-website/data/files.json > coverage-website/data/files.json.tmp
+          mv coverage-website/data/files.json.tmp coverage-website/data/files.json
+
       - name: Select preview URL
         id: preview
         env:

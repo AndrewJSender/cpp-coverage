@@ -239,7 +239,7 @@ function init_summary_table(path, manifest, files_data) {
         init_summary_row(summary_table, file_path)
         if (path == file_path) {
             file_details_div.hidden = false;
-            init_file_details_table_body(path)
+            init_file_details_table_body(path, files_data.source_root ?? "../../../../")
         } else {
             file_details_div.hidden = true;
         }
@@ -257,12 +257,13 @@ function init_parent_anchor(path) {
     }
 }
 
-function init_file_details_table_body(path) {
+function init_file_details_table_body(path, source_root) {
     let file_details_table = document.getElementById("file_details_table");
     let file_details_table_body = document.getElementById("file_details_table_body");
     file_details_table.hidden = false;
     console.log("Fetching file: ", path);
-    fetch(`../../../../${path}`).then(response => response.text()).then(file => {
+    const source_url = new URL(path, new URL(source_root, window.location.href));
+    fetch(source_url).then(response => response.text()).then(file => {
         console.log("File: ", file);
         const lines = file.split(/\r\n|\n/);
         for (lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -289,4 +290,3 @@ function on_load() {
     });
     console.log("Initialization Complete.");
 }
-

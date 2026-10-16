@@ -76,6 +76,13 @@ open http://localhost:8000/website/?path=./example
 python -m http.server
 ```
 
+The optional `source_root` field in `website/data/files.json` specifies the source
+directory URL relative to the website page. It should end with `/`. When omitted,
+the viewer retains the existing local source prefix, `../../../../`.
+The Deploy Pages job copies `example/` into each published site and sets
+`source_root` to `./` in the deployed metadata only, including for PR previews
+(for example, `pr/4/?path=./example/src/my_lib.cpp`).
+
 ## License
 
 Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)

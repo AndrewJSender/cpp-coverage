@@ -39,13 +39,14 @@ jobs:
       #     path: coverage_data.zip
 
       - name: Upload Pages site
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           name: coverage-website
           path: website
           if-no-files-found: error
 
   deploy-pages:
+    name: Deploy Pages
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     needs: MacOS
     runs-on: ubuntu-latest
@@ -61,10 +62,10 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
 
       - name: Download coverage website
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@main
         with:
           name: coverage-website
           path: coverage-website
@@ -92,24 +93,24 @@ jobs:
             pr/
 
       - name: Check out all published sites
-        uses: actions/checkout@v4
+        uses: actions/checkout@main
         with:
           ref: gh-pages
           path: pages-site
 
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@main
 
       - name: Upload all Pages sites
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@main
         with:
           path: pages-site
 
       - name: Deploy Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@main
 
-      - name: Report coverage URL
+      - name: Report Coverage Report URL
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
           PREVIEW_PATH: ${{ steps.preview.outputs.url-path }}

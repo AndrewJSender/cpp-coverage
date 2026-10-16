@@ -1,9 +1,6 @@
 // Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
 // Licensed under the MIT License. See LICENSE for details.
 
-
-
-
 const STATS_TYPE_ORDER = ["functions", "lines", "regions", "instantiations"];
 const SEGMENT_ORDER = ["line", "column", "count", "has_count", "is_region_entry", "is_gap_region"];
 

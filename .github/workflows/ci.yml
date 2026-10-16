@@ -13,8 +13,9 @@ permissions:
   pull-requests: read
 
 jobs:
-  MacOS:
+  macos:
     runs-on: macos-latest
+    name: MacOS Build, Run Tests, and Generate Coverage Data
     steps:
       - name: Check out repository
         uses: actions/checkout@main
@@ -36,7 +37,7 @@ jobs:
   deploy-pages:
     name: Deploy Pages
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: MacOS
+    needs: macos
     runs-on: ubuntu-latest
     permissions:
       contents: write

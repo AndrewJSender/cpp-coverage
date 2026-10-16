@@ -11,7 +11,8 @@ option(ENABLE_COVERAGE "Enable LLVM or Bullseye coverage instrumentation" OFF)
 set(COVERAGE_TOOL "llvm" CACHE STRING "Coverage tool (llvm or bullseye)")
 set_property(CACHE COVERAGE_TOOL PROPERTY STRINGS llvm bullseye)
 
-add_executable(coverage_example main.cpp)
+add_executable(coverage_example src/main.cpp)
+target_include_directories(coverage_example PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 enable_testing()
 add_test(NAME coverage_example COMMAND coverage_example)

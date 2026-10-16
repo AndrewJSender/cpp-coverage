@@ -8,7 +8,7 @@ This project reads coverage artifacts from tools such as LLVM, Bullseye, and Ope
 
 ## Example
 
-The example builds a single `coverage_example` executable from `example/main.cpp`.
+The example builds a single `coverage_example` executable from `example/src/main.cpp`.
 
 ### Constants
 ```zsh

@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage
   SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
-<coverage branch-rate="0.5" branches-covered="13" branches-valid="26" complexity="0" line-rate="0.532258064516129" lines-covered="33" lines-valid="62" timestamp="1792158495" version="2.0.3">
+<coverage branch-rate="0.5" branches-covered="13" branches-valid="26" complexity="0" line-rate="0.532258064516129" lines-covered="33" lines-valid="62" timestamp="1792169004" version="2.0.3">
 	<sources>
 		<source>/Users/runner/work/cpp-coverage/cpp-coverage</source>
 	</sources>

@@ -69,7 +69,15 @@ python src/generate_profile.py \
  --output-directory="$test_output_path"
 ```
 
-## Run Website Locally
+## View Coverage Website
+
+The published coverage website is available at
+[andrewjsender.github.io/cpp-coverage](https://andrewjsender.github.io/cpp-coverage/).
+
+View the [example coverage](https://andrewjsender.github.io/cpp-coverage/?path=./example)
+or the [source coverage for my_lib.cpp](https://andrewjsender.github.io/cpp-coverage/?path=./example/src/my_lib.cpp).
+
+### Run Website Locally
 
 ```zsh
 open http://localhost:8000/website/?path=./example

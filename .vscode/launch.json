@@ -1,18 +1,32 @@
 {
   "configurations": [
     {
-      "name": "Generate Project",
-      "type": "debugpy",
+      "type": "cmake",
       "request": "launch",
-      "program": "example/submodules/cmake-project-generator/src/generate.py",
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}",
-      "args": [
-        // "--help",
-        "--source-dir=${workspaceFolder}/example",
-        "--build-dir=${workspaceFolder}/build"
+      "name": "CMake: Configure project",
+      "cmakeDebugType": "configure",
+      "clean": false,
+      "configureAll": false,
+      "scriptArgs": [
+        "-G=Xcode",
+        "-S=${workspaceFolder}/example",
+        "-B=${workspaceFolder}/build",
+        "-DENABLE_COVERAGE=ON",
+        "-DCOVERAGE_TOOL=llvm"
       ]
     },
+    {
+      "type": "cmake",
+      "request": "launch",
+      "name": "Build and Run Project",
+      "cmakeDebugType": "configure",
+      "clean": false,
+      "configureAll": false,
+      "scriptArgs": [
+        "--build", "${workspaceFolder}/build", "--target", "generate_profile_data"
+      ]
+    },
+
     {
       "name": "Generate Profile Data",
       "type": "debugpy",
@@ -22,8 +36,8 @@
       "cwd": "${workspaceFolder}",
       "args": [
         // "--help",
-        "--test-binary=${workspaceFolder}/build/submodules/googletest/googletest/Debug/sample1_unittest",
-        "--output-directory=/Users/sender/Downloads/sample1_unittest",
+        "--test-binary=${workspaceFolder}/build/Debug/coverage_example",
+        "--output-directory=${workspaceFolder}/build/coverage_example_output",
       ],
     }
   ]

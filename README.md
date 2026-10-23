@@ -77,10 +77,17 @@ The published coverage website is available at
 View the [example coverage](https://andrewjsender.github.io/cpp-coverage/?path=./example)
 or the [source coverage for my_lib.cpp](https://andrewjsender.github.io/cpp-coverage/?path=./example/src/my_lib.cpp).
 
+The report includes summary cards for line, function, region, and branch coverage.
+Use the path table to browse into folders and files; file views also show source
+lines with execution counts. The function inventory lists covered and uncovered
+functions and can be filtered by status or searched by function name and file.
+Function-level details are shown when the selected coverage report provides them
+(including LLVM reports); other formats may not export this information.
+
 ### Run Website Locally
 
 ```zsh
-open http://localhost:8000/website/?path=./example
+open "http://localhost:8000/website/?path=./example"
 python -m http.server
 ```
 

@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
 // Licensed under the MIT License. See LICENSE for details.
 
-const STATS_TYPE_ORDER = ["functions", "lines", "regions", "instantiations"];
+const STATS_TYPE_ORDER = ["functions", "lines", "regions", "branches"];
 const SEGMENT_ORDER = ["line", "column", "count", "has_count", "is_region_entry", "is_gap_region"];
+let function_report_state = { pending: 0, loaded: 0, errors: 0, functions: 0 };
 
 function append_platform_stats_row(stats_table, platform, file_platform_stats_covered, file_stats_count) {
     let stats_table_body = stats_table.getElementsByTagName("tbody")[0]
@@ -60,10 +61,19 @@ function update_summary_file_stats_table(file_row, stats_type, platform, file_su
 
 function update_summary_table(path, platform, summary_data) {
     let summary_total_row = document.getElementById("Total");
+    let card_totals = Object.fromEntries(STATS_TYPE_ORDER.map(stats_type => [stats_type, { covered: 0, count: 0 }]));
     for (let file of summary_data["data"][0]["files"]) {
         let file_name = `./${file["filename"]}`;
         if (file_name != path && !file_name.startsWith(path)) {
             continue
+        }
+
+        let file_summary = file["summary"];
+        for (let stats_type of STATS_TYPE_ORDER) {
+            if (stats_type in file_summary) {
+                card_totals[stats_type].covered += file_summary[stats_type]["covered"];
+                card_totals[stats_type].count += file_summary[stats_type]["count"];
+            }
         }
 
         let path_parts = path.split("/");
@@ -71,7 +81,6 @@ function update_summary_table(path, platform, summary_data) {
         let file_path = file_path_parts.join("/");
         let file_row = document.getElementById(file_path);
         if (file_row) {
-            let file_summary = file["summary"];
             for (let stats_type of STATS_TYPE_ORDER) {
                 if (stats_type in file_summary) {
                     update_summary_file_stats_table(summary_total_row, stats_type, platform, file_summary)
@@ -79,6 +88,41 @@ function update_summary_table(path, platform, summary_data) {
                 }
             }
         }
+
+    }
+    update_coverage_cards(card_totals);
+}
+
+function update_coverage_cards(card_totals) {
+    for (let [stats_type, totals] of Object.entries(card_totals)) {
+        let card = document.querySelector(`.coverage-card[data-stat="${stats_type}"]`);
+        if (!card) {
+            continue;
+        }
+
+        let covered_cell = card.dataset.covered || 0;
+        let count_cell = card.dataset.count || 0;
+        let covered = Number(covered_cell) + totals.covered;
+        let count = Number(count_cell) + totals.count;
+        card.dataset.covered = covered;
+        card.dataset.count = count;
+
+        let value = card.querySelector(".card-value");
+        let detail = card.querySelector(".card-detail");
+        let progress = card.querySelector(".progress-value");
+        if (count === 0) {
+            value.textContent = "—";
+            detail.textContent = "No coverage points";
+            progress.style.width = "0%";
+            card.removeAttribute("data-level");
+            continue;
+        }
+
+        let percent = Math.round(covered / count * 100);
+        value.textContent = `${percent}%`;
+        detail.textContent = `${covered} of ${count} covered`;
+        progress.style.width = `${percent}%`;
+        card.dataset.level = percent < 60 ? "low" : "good";
     }
 }
 
@@ -134,6 +178,7 @@ function update_file_details(path, platform, file_details) {
 
 function handle_files_data (path, manifest_data, files_data) {
     init_summary_table(path, manifest_data, files_data);
+    init_function_table(Object.keys(manifest_data).length);
     
     let coverage_ul = document.getElementById("coverage_list");
     Object.entries(manifest_data).forEach(([platform, value]) => {
@@ -147,6 +192,23 @@ function handle_files_data (path, manifest_data, files_data) {
         list_item.appendChild(anchor);
         coverage_ul.appendChild(list_item);
 
+        fetch(`${coverage_path}/coverage_details.json`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(details_data => {
+                add_function_rows(path, platform, details_data);
+                complete_function_report();
+            })
+            .catch(error => {
+                console.error(`Unable to load function details for ${platform}:`, error);
+                function_report_state.errors += 1;
+                complete_function_report();
+            });
+
         fetch(`${coverage_path}/${coverage_file}`).then(response => response.json()).then(summary_data => {
             console.debug("Summary: ", summary_data);
             update_summary_table(path, platform, summary_data);
@@ -159,6 +221,105 @@ function handle_files_data (path, manifest_data, files_data) {
             }
         });
     });
+}
+
+function init_function_table(report_count) {
+    document.getElementById("function_table_body").replaceChildren();
+    function_report_state = { pending: report_count, loaded: 0, errors: 0, functions: 0 };
+    document.getElementById("function_report_status").textContent = report_count
+        ? "Loading function details…"
+        : "No coverage reports were found.";
+}
+
+function add_function_rows(path, platform, details_data) {
+    let function_table_body = document.getElementById("function_table_body");
+    let functions = details_data["data"]?.[0]?.["functions"] || details_data["functions"];
+    if (!Array.isArray(functions)) {
+        return;
+    }
+
+    for (let covered_function of functions) {
+        let filenames = Array.isArray(covered_function["filenames"])
+            ? covered_function["filenames"]
+            : [];
+        for (let filename of filenames) {
+            let file_path = `./${filename.replace(/^\.?\//, "")}`;
+            if (file_path != path && !file_path.startsWith(`${path}/`) && path != ".") {
+                continue;
+            }
+
+            let is_covered = Number(covered_function["count"]) > 0;
+            let row = function_table_body.insertRow();
+            row.dataset.coverage = is_covered ? "covered" : "uncovered";
+
+            let status_cell = row.insertCell();
+            let status_badge = document.createElement("span");
+            status_badge.className = `function-badge${is_covered ? "" : " uncovered"}`;
+            status_badge.textContent = is_covered ? "Covered" : "Not covered";
+            status_cell.appendChild(status_badge);
+
+            row.insertCell().textContent = covered_function["name"] || "(unnamed function)";
+            row.insertCell().textContent = filename;
+            row.insertCell().textContent = covered_function["count"] ?? 0;
+            row.insertCell().textContent = platform;
+            function_report_state.functions += 1;
+        }
+    }
+}
+
+function complete_function_report() {
+    function_report_state.pending -= 1;
+    function_report_state.loaded += 1;
+    if (function_report_state.pending > 0) {
+        return;
+    }
+
+    let status = document.getElementById("function_report_status");
+    if (function_report_state.functions === 0) {
+        status.textContent = function_report_state.errors
+            ? `Function details could not be loaded for ${function_report_state.errors} report(s), or are not available for this coverage format.`
+            : "No function-level coverage data is available for this report.";
+        return;
+    }
+
+    let status_text = `${function_report_state.functions} function entr${function_report_state.functions === 1 ? "y" : "ies"} shown`;
+    if (function_report_state.errors) {
+        status_text += ` · function details unavailable for ${function_report_state.errors} report(s)`;
+    }
+    status.textContent = status_text;
+    apply_function_filters();
+}
+
+function apply_function_filters() {
+    let coverage_filter = document.getElementById("function_filter").value;
+    let search_term = document.getElementById("function_search").value.toLowerCase();
+    let visible_count = 0;
+    for (let row of document.getElementById("function_table_body").rows) {
+        if (row.id === "function_empty_row") {
+            continue;
+        }
+        let matches_coverage = coverage_filter == "all" || row.dataset.coverage == coverage_filter;
+        let matches_search = row.textContent.toLowerCase().includes(search_term);
+        row.hidden = !matches_coverage || !matches_search;
+        if (!row.hidden) {
+            visible_count += 1;
+        }
+    }
+
+    let empty_row = document.getElementById("function_empty_row");
+    if (visible_count === 0 && function_report_state.functions > 0) {
+        if (!empty_row) {
+            empty_row = document.getElementById("function_table_body").insertRow();
+            empty_row.id = "function_empty_row";
+            let cell = empty_row.insertCell();
+            cell.colSpan = 5;
+            cell.className = "function-empty";
+        }
+        empty_row.cells[0].textContent = "No functions match these filters.";
+        empty_row.hidden = false;
+    } else if (empty_row) {
+        empty_row.hidden = true;
+    }
 }
 
 
@@ -283,6 +444,8 @@ function on_load() {
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.has("path") ? urlParams.get("path") : ".";
     init_parent_anchor(path);
+    document.getElementById("function_filter").addEventListener("change", apply_function_filters);
+    document.getElementById("function_search").addEventListener("input", apply_function_filters);
 
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);

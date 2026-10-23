@@ -83,6 +83,11 @@ lines with execution counts. The function inventory lists covered and uncovered
 functions and can be filtered by status or searched by function name and file.
 Function-level details are shown when the selected coverage report provides them
 (including LLVM reports); other formats may not export this information.
+LLVM report generation uses the platform's `c++filt` or `llvm-cxxfilt` executable
+to add readable C++ function names to `coverage_details.json`, preserving the
+original symbols. The website displays the readable names when available, with
+the original symbol in a tooltip. Regenerate existing reports to populate these
+names.
 
 ### Run Website Locally
 

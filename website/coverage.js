@@ -258,7 +258,9 @@ function add_function_rows(path, platform, details_data) {
             status_badge.textContent = is_covered ? "Covered" : "Not covered";
             status_cell.appendChild(status_badge);
 
-            row.insertCell().textContent = covered_function["name"] || "(unnamed function)";
+            let function_name_cell = row.insertCell();
+            function_name_cell.textContent = covered_function["demangled_name"] || covered_function["name"] || "(unnamed function)";
+            function_name_cell.title = covered_function["name"] || "";
             row.insertCell().textContent = filename;
             row.insertCell().textContent = covered_function["count"] ?? 0;
             row.insertCell().textContent = platform;

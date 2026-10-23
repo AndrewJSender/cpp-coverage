@@ -3,6 +3,7 @@
 
 import subprocess
 import os
+import json
 from pathlib import Path
 import logging
 
@@ -21,6 +22,37 @@ def run_subprocess(cmd_parts, out_path):
     with open(out_path, "w") as outfile:
         logger.debug("Running: %s", " ".join(cmd_parts))
         subprocess.run(cmd_parts, stdout=outfile)
+
+
+def demangle_function_names(details_json_path: Path, llvm_cxxfilt: str) -> None:
+    with open(details_json_path, encoding="utf-8") as details_file:
+        details = json.load(details_file)
+
+    functions = [
+        function
+        for export in details["data"]
+        for function in export.get("functions", [])
+    ]
+    if not functions:
+        return
+
+    result = subprocess.run(
+        [llvm_cxxfilt],
+        input="".join(f"{function['name']}\n" for function in functions),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    )
+    names = result.stdout.splitlines()
+    if len(names) != len(functions) or any(not name for name in names):
+        raise ValueError("C++ demangler returned an unexpected number of function names or an empty name")
+
+    for function, name in zip(functions, names):
+        function["demangled_name"] = name
+
+    with open(details_json_path, "w", encoding="utf-8") as details_file:
+        json.dump(details, details_file)
 
 
 async def profile_llvm_data(
@@ -86,6 +118,7 @@ async def profile_llvm_data(
     details_json_path = Path(f"{test_output_path}", "coverage_details.json")
     details_cmd = [llvm_cov, "export", "--format=text"] + llvm_cov_common_args
     run_subprocess(details_cmd, details_json_path)
+    demangle_function_names(details_json_path, llvm_cxxfilt)
 
     lcov_path = Path(f"{test_output_path}", "coverage.lcov")
     if gen_lcov or gen_lcov_to_cobertura:

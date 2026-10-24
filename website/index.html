@@ -135,15 +135,27 @@
             <p class="eyebrow">SOURCE VIEW</p>
             <h2>File details</h2>
           </div>
-          <span class="section-hint">Execution counts by line</span>
+          <div class="function-controls">
+            <label class="visually-hidden" for="source_report">Source coverage report</label>
+            <select id="source_report" disabled>
+              <option value="">All reports (summed)</option>
+            </select>
+          </div>
+        </div>
+        <p id="source_status" class="function-status" role="status">Loading source coverage...</p>
+        <p id="source_error" class="source-error" role="alert" hidden></p>
+        <div class="source-legend" aria-label="Coverage legend">
+          <span class="covered-line">Covered count</span>
+          <span class="uncovered-line">Uncovered count</span>
+          <span class="uncovered-region">Uncovered source region</span>
         </div>
         <div class="table-scroll source-scroll">
           <table id="file_details_table" hidden="true">
             <thead id="file_details_table_header">
               <tr>
-                <th>#</th>
-                <th>Code</th>
-                <th>Total</th>
+                <th>Line</th>
+                <th id="source_count_header">Count</th>
+                <th>Source</th>
               </tr>
             </thead>
             <tbody id="file_details_table_body"></tbody>

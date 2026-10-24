@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE for details.
 
 const STATS_TYPE_ORDER = ["functions", "lines", "regions", "branches"];
-const SEGMENT_ORDER = ["line", "column", "count", "has_count", "is_region_entry", "is_gap_region"];
 let function_report_state = { pending: 0, loaded: 0, errors: 0, functions: 0 };
+const source_report_state = { lines: null, reports: new Map() };
 
 function append_platform_stats_row(stats_table, platform, file_platform_stats_covered, file_stats_count) {
     let stats_table_body = stats_table.getElementsByTagName("tbody")[0]
@@ -127,51 +127,136 @@ function update_coverage_cards(card_totals) {
 }
 
 function update_file_details(path, platform, file_details) {
-    console.debug("Updating file details");
-    let file_details_table_header = document.getElementById("file_details_table_header");
-    let file_details_table_body = document.getElementById("file_details_table_body");
-    if (!file_details) {
-        console.debug(`File ${path} not found in details data for ${platform}`);
-        return;
+    if (!Array.isArray(file_details?.segments)) {
+        throw new Error(`Missing coverage segments for ${path} (${platform})`);
     }
+    source_report_state.reports.set(platform, file_details);
 
-    console.debug(file_details);
-
-    // init platform column
-    file_details_table_header.rows[0].insertCell().innerHTML = platform;
-    for (let row of file_details_table_body.rows) {
-        row.insertCell();
+    let selector = document.getElementById("source_report");
+    if (![...selector.options].some(option => option.value === platform)) {
+        selector.add(new Option(platform, platform));
+        selector.disabled = false;
     }
+    render_source_coverage();
+}
 
-    let platform_cell_index = file_details_table_header.rows[0].cells.length - 1;
-
-    // update platform column
-    // Based on https://github.com/llvm/llvm-project/blob/main/llvm/tools/llvm-cov/CoverageExporterJson.cpp#L83-L86
-    for (let segment of file_details["segments"]) {
-        // console.debug(segment);
-        let line_row_index = segment[0] - 1;
-        if (line_row_index >= file_details_table_body.rows.length) {
-            console.log(`line_row_index = ${line_row_index} >= ${file_details_table_body.rows.length} = file_details_table_body.rows.length`)
+function source_column_offset(text, column) {
+    let bytes = 1;
+    let offset = 0;
+    for (let character of text) {
+        if (bytes >= column) {
             break;
         }
-        let line_row = file_details_table_body.rows[line_row_index];
-        // console.debug(line_row);
-        let total_cell = line_row.cells[2];
-        let platform_cell = line_row.cells[platform_cell_index];
-        if (segment[3]) {
-            let prev_platform_count = 0;
-            if (platform_cell.innerHTML != "") {
-                prev_platform_count = parseInt(platform_cell.innerHTML);
-            }
+        bytes += new TextEncoder().encode(character).length;
+        offset += character.length;
+    }
+    return offset;
+}
 
-            let prev_total_count = 0;
-            if (total_cell.innerHTML != "") {
-                prev_total_count = parseInt(total_cell.innerHTML);
+function build_line_coverage(lines, segments) {
+    let coverage = lines.map(() => ({ count: null, ranges: [] }));
+    // Cobertura-derived reports use column zero for independent line hits.
+    if (segments.every(segment => segment[1] === 0)) {
+        for (let [line, , count, has_count] of segments) {
+            if (coverage[line - 1] && has_count) {
+                coverage[line - 1].count = count;
+                coverage[line - 1].ranges = [{ start: 0, end: lines[line - 1].length, count }];
             }
-
-            platform_cell.innerHTML = prev_platform_count + segment[2];
-            total_cell.innerHTML = prev_total_count + segment[2];
         }
+        return coverage;
+    }
+
+    let index = 0;
+    let wrapped = null;
+    for (let line = 1; line <= lines.length; line++) {
+        let line_segments = [];
+        while (index < segments.length && segments[index][0] === line) {
+            line_segments.push(segments[index++]);
+        }
+        let entries = line_segments.filter(segment => segment[3] && segment[4] && !segment[5]);
+        let first = line_segments[0];
+        let skipped = first && !first[3] && first[4];
+        let mapped = (!skipped && (wrapped?.[3] || entries.length > 0))
+            || line_segments.some(segment => segment[3] && segment[4]);
+        let stats = coverage[line - 1];
+        if (mapped) {
+            // LLVM uses the maximum region-entry/wrapped count, not their sum.
+            stats.count = Math.max(wrapped?.[2] ?? 0, ...entries.map(segment => segment[2]));
+        }
+
+        let active = wrapped;
+        let start = 0;
+        for (let segment of line_segments) {
+            let end = source_column_offset(lines[line - 1], segment[1]);
+            if (active?.[3] && !active[5] && start < end) {
+                stats.ranges.push({ start, end, count: active[2] });
+            }
+            active = segment;
+            start = end;
+        }
+        if (active?.[3] && !active[5] && start < lines[line - 1].length) {
+            stats.ranges.push({ start, end: lines[line - 1].length, count: active[2] });
+        }
+        if (line_segments.length) {
+            wrapped = line_segments[line_segments.length - 1];
+        }
+    }
+    return coverage;
+}
+
+function render_source_coverage() {
+    if (!source_report_state.lines || source_report_state.reports.size === 0) {
+        return;
+    }
+    let selected = document.getElementById("source_report").value;
+    let reports = [...source_report_state.reports.entries()]
+        .filter(([platform]) => selected === "" || platform === selected)
+        .map(([, details]) => build_line_coverage(source_report_state.lines, details.segments));
+    let body = document.getElementById("file_details_table_body");
+    body.replaceChildren();
+    source_report_state.lines.forEach((text, index) => {
+        let row = body.insertRow();
+        row.id = `L${index + 1}`;
+        let anchor = document.createElement("a");
+        anchor.href = `#${row.id}`;
+        anchor.textContent = index + 1;
+        row.insertCell().appendChild(anchor);
+
+        let stats = reports.map(report => report[index]);
+        let counts = stats.map(line => line.count).filter(count => count !== null);
+        let count = counts.length ? counts.reduce((sum, value) => sum + value, 0) : null;
+        let count_cell = row.insertCell();
+        count_cell.className = count === null ? "skipped-line" : count > 0 ? "covered-line" : "uncovered-line";
+        count_cell.textContent = count ?? "";
+        count_cell.title = count === null ? "Not instrumented" : `${count} executions`;
+
+        let source_cell = row.insertCell();
+        let ranges = stats.flatMap(line => line.ranges);
+        let boundaries = [...new Set([0, text.length, ...ranges.flatMap(range => [range.start, range.end])])]
+            .sort((a, b) => a - b);
+        for (let boundary = 0; boundary < boundaries.length - 1; boundary++) {
+            let start = boundaries[boundary];
+            let end = boundaries[boundary + 1];
+            let covering = ranges.filter(range => range.start <= start && range.end >= end);
+            let part = text.slice(start, end);
+            if (covering.length && covering.every(range => range.count === 0)) {
+                let span = document.createElement("span");
+                span.className = "uncovered-region";
+                span.title = "Uncovered region: 0 executions";
+                span.textContent = part;
+                source_cell.appendChild(span);
+            } else {
+                source_cell.appendChild(document.createTextNode(part));
+            }
+        }
+    });
+    document.getElementById("source_count_header").textContent = selected === "" && reports.length > 1
+        ? "Count (sum)" : "Count";
+    document.getElementById("source_status").textContent = selected === "" && reports.length > 1
+        ? `${reports.length} loaded reports summed. Select a report to compare with its LLVM HTML.`
+        : "Line counts and uncovered regions for the selected report. Blank counts are not instrumented.";
+    if (window.location.hash) {
+        document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "nearest" });
     }
 }
 
@@ -215,8 +300,21 @@ function handle_files_data (path, manifest_data, files_data) {
             if (document.getElementById("file_details_div").hidden) {
                 console.debug("File details hidden");
             } else {
-                fetch(`${coverage_path}/code_coverage_details/${path}.json`).then(response => response.json()).then(file_details => {
+                fetch(`${coverage_path}/code_coverage_details/${path}.json`).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                }).then(file_details => {
                     update_file_details(path, platform, file_details);
+                }).catch(error => {
+                    console.error(`Unable to load source coverage for ${platform}:`, error);
+                    let message = document.getElementById("source_error");
+                    message.hidden = false;
+                    message.textContent += ` Source coverage unavailable for ${platform}: ${error.message}.`;
+                    if (source_report_state.reports.size === 0) {
+                        document.getElementById("source_status").textContent = "Source coverage could not be loaded.";
+                    }
                 });
             }
         });
@@ -385,13 +483,6 @@ function init_summary_row(summary_table, file_path) {
     }
 }
 
-function encodeHTML(input) {
-    input = input.replace(/&/g, '&amp;');
-    input = input.replace(/</g, '&lt;');
-    input = input.replace(/>/g, '&gt;');
-    return input;
-}
-
 function init_summary_table(path, manifest, files_data) {
     console.log("Updating summary table for path: ", path);
     let summary_table = document.getElementById("summary_table_body");
@@ -422,21 +513,26 @@ function init_parent_anchor(path) {
 
 function init_file_details_table_body(path, source_root) {
     let file_details_table = document.getElementById("file_details_table");
-    let file_details_table_body = document.getElementById("file_details_table_body");
     file_details_table.hidden = false;
-    console.log("Fetching file: ", path);
     const source_url = new URL(path, new URL(source_root, window.location.href));
-    fetch(source_url).then(response => response.text()).then(file => {
-        console.log("File: ", file);
-        const lines = file.split(/\r\n|\n/);
-        for (lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-            let row = file_details_table_body.insertRow();
-            let index_cell = row.insertCell();
-            index_cell.innerHTML = lineIndex + 1;
-            let line_cell = row.insertCell();
-            line_cell.innerHTML = encodeHTML(lines[lineIndex]);
-            let count_cell = row.insertCell();
+    fetch(source_url).then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} loading ${source_url}`);
         }
+        return response.text();
+    }).then(file => {
+        let lines = file.split(/\r\n|\n/);
+        if (lines[lines.length - 1] === "") {
+            lines.pop();
+        }
+        source_report_state.lines = lines;
+        render_source_coverage();
+    }).catch(error => {
+        console.error("Unable to load source text:", error);
+        document.getElementById("source_status").textContent = "Source text could not be loaded.";
+        let message = document.getElementById("source_error");
+        message.hidden = false;
+        message.textContent += ` Source text unavailable: ${error.message}.`;
     });
 }
 
@@ -448,6 +544,7 @@ function on_load() {
     init_parent_anchor(path);
     document.getElementById("function_filter").addEventListener("change", apply_function_filters);
     document.getElementById("function_search").addEventListener("input", apply_function_filters);
+    document.getElementById("source_report").addEventListener("change", render_source_coverage);
 
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);

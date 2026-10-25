@@ -93,7 +93,7 @@ async def profile_llvm_data(
         llvm_bin_path = await ctx.eval_async("/usr/lib/llvm-18/bin")
         llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata")
         llvm_cov = await ctx.eval_async(f"{llvm_bin_path}/llvm-cov")
-        llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/c++filt")
+        llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/llvm-cxxfilt")
     else:
         logger.warning("platform %s not supported", platform)
         return

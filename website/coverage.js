@@ -540,7 +540,7 @@ function init_parent_anchor(path) {
     let parent_path = path.split("/").slice(0, -1).join("/");
     if (parent_path) {
         parent_anchor.href = `?path=${parent_path}`;
-        parent_anchor.innerHTML = `Go to parent .. (${parent_path})`;
+        parent_anchor.textContent = `Go to parent .. (${parent_path})`;
     } else {
         parent_anchor.hidden = true;
     }

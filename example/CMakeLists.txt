@@ -47,7 +47,7 @@ if(ENABLE_COVERAGE AND COVERAGE_TOOL STREQUAL "llvm")
     endif()
 
     file(MAKE_DIRECTORY "${COVERAGE_OUTPUT_DIR}")
-    set(LLVM_PROFILE "${COVERAGE_OUTPUT_DIR}/coverage.profraw")
+    set(LLVM_PROFILE "${COVERAGE_OUTPUT_DIR}/coverage-%m-%p.profraw")
     set_tests_properties(coverage_example PROPERTIES
         ENVIRONMENT "LLVM_PROFILE_FILE=${LLVM_PROFILE}"
     )

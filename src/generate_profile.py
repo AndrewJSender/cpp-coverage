@@ -73,7 +73,7 @@ async def generate(args: argparse.Namespace) -> None:
     output_directory = args.output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
     profile_path = output_directory / "coverage.profraw"
-    if not profile_path.exists():
+    if not list(output_directory.glob("coverage*.profraw")):
         raise FileNotFoundError(f"LLVM profile data was not found: {profile_path}")
 
     build_info = {

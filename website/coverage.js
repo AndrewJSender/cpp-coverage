@@ -3,7 +3,12 @@
 
 const STATS_TYPE_ORDER = ["functions", "lines", "regions", "branches"];
 let function_report_state = { pending: 0, loaded: 0, errors: 0, functions: 0 };
-const source_report_state = { lines: null, reports: new Map() };
+const source_report_state = { lines: null, reports: new Map(), pending: new Set(), errors: new Set() };
+
+function is_path_in_scope(path, file_path) {
+    let directory = path.endsWith("/") ? path.slice(0, -1) : path;
+    return path === "." || file_path === path || file_path.startsWith(`${directory}/`);
+}
 
 function append_platform_stats_row(stats_table, platform, file_platform_stats_covered, file_stats_count) {
     let stats_table_body = stats_table.getElementsByTagName("tbody")[0]
@@ -64,7 +69,7 @@ function update_summary_table(path, platform, summary_data) {
     let card_totals = Object.fromEntries(STATS_TYPE_ORDER.map(stats_type => [stats_type, { covered: 0, count: 0 }]));
     for (let file of summary_data["data"][0]["files"]) {
         let file_name = `./${file["filename"]}`;
-        if (file_name != path && !file_name.startsWith(path)) {
+        if (!is_path_in_scope(path, file_name)) {
             continue
         }
 
@@ -131,6 +136,8 @@ function update_file_details(path, platform, file_details) {
         throw new Error(`Missing coverage segments for ${path} (${platform})`);
     }
     source_report_state.reports.set(platform, file_details);
+    source_report_state.pending.delete(platform);
+    source_report_state.errors.delete(platform);
 
     let selector = document.getElementById("source_report");
     if (![...selector.options].some(option => option.value === platform)) {
@@ -205,7 +212,7 @@ function build_line_coverage(lines, segments) {
 }
 
 function render_source_coverage() {
-    if (!source_report_state.lines || source_report_state.reports.size === 0) {
+    if (!source_report_state.lines) {
         return;
     }
     let selected = document.getElementById("source_report").value;
@@ -252,9 +259,25 @@ function render_source_coverage() {
     });
     document.getElementById("source_count_header").textContent = selected === "" && reports.length > 1
         ? "Count (sum)" : "Count";
-    document.getElementById("source_status").textContent = selected === "" && reports.length > 1
-        ? `${reports.length} loaded reports summed. Select a report to compare with its LLVM HTML.`
-        : "Line counts and uncovered regions for the selected report. Blank counts are not instrumented.";
+    let status;
+    if (selected !== "" && reports.length === 0) {
+        status = source_report_state.pending.has(selected)
+            ? `Coverage details for ${selected} are loading.`
+            : `Coverage details for ${selected} are unavailable.`;
+    } else if (reports.length === 0) {
+        status = source_report_state.pending.size
+            ? "Source text loaded; coverage details are loading."
+            : "Source text loaded; coverage details are unavailable.";
+    } else if (source_report_state.pending.size) {
+        status = `${reports.length} loaded report(s); ${source_report_state.pending.size} report(s) still loading.`;
+    } else if (source_report_state.errors.size) {
+        status = `${reports.length} loaded report(s); coverage details unavailable for ${source_report_state.errors.size} report(s).`;
+    } else {
+        status = selected === "" && reports.length > 1
+            ? `${reports.length} loaded reports summed. Select a report to compare with its LLVM HTML.`
+            : "Line counts and uncovered regions for the selected report. Blank counts are not instrumented.";
+    }
+    document.getElementById("source_status").textContent = status;
     if (window.location.hash) {
         document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "nearest" });
     }
@@ -262,6 +285,8 @@ function render_source_coverage() {
 
 
 function handle_files_data (path, manifest_data, files_data) {
+    source_report_state.pending = new Set(Object.keys(manifest_data));
+    source_report_state.errors.clear();
     init_summary_table(path, manifest_data, files_data);
     init_function_table(Object.keys(manifest_data).length);
     
@@ -309,14 +334,19 @@ function handle_files_data (path, manifest_data, files_data) {
                     update_file_details(path, platform, file_details);
                 }).catch(error => {
                     console.error(`Unable to load source coverage for ${platform}:`, error);
+                    source_report_state.pending.delete(platform);
+                    source_report_state.errors.add(platform);
                     let message = document.getElementById("source_error");
                     message.hidden = false;
                     message.textContent += ` Source coverage unavailable for ${platform}: ${error.message}.`;
-                    if (source_report_state.reports.size === 0) {
-                        document.getElementById("source_status").textContent = "Source coverage could not be loaded.";
-                    }
+                    render_source_coverage();
                 });
             }
+        }).catch(error => {
+            console.error(`Unable to load coverage summary for ${platform}:`, error);
+            source_report_state.pending.delete(platform);
+            source_report_state.errors.add(platform);
+            render_source_coverage();
         });
     });
 }
@@ -331,7 +361,9 @@ function init_function_table(report_count) {
 
 function add_function_rows(path, platform, details_data) {
     let function_table_body = document.getElementById("function_table_body");
-    let functions = details_data["data"]?.[0]?.["functions"] || details_data["functions"];
+    let functions = Array.isArray(details_data["data"])
+        ? details_data["data"].flatMap(export_data => export_data["functions"] || [])
+        : details_data["functions"];
     if (!Array.isArray(functions)) {
         return;
     }
@@ -340,30 +372,33 @@ function add_function_rows(path, platform, details_data) {
         let filenames = Array.isArray(covered_function["filenames"])
             ? covered_function["filenames"]
             : [];
-        for (let filename of filenames) {
-            let file_path = `./${filename.replace(/^\.?\//, "")}`;
-            if (file_path != path && !file_path.startsWith(`${path}/`) && path != ".") {
-                continue;
-            }
-
-            let is_covered = Number(covered_function["count"]) > 0;
-            let row = function_table_body.insertRow();
-            row.dataset.coverage = is_covered ? "covered" : "uncovered";
-
-            let status_cell = row.insertCell();
-            let status_badge = document.createElement("span");
-            status_badge.className = `function-badge${is_covered ? "" : " uncovered"}`;
-            status_badge.textContent = is_covered ? "Covered" : "Not covered";
-            status_cell.appendChild(status_badge);
-
-            let function_name_cell = row.insertCell();
-            function_name_cell.textContent = covered_function["demangled_name"] || covered_function["name"] || "(unnamed function)";
-            function_name_cell.title = covered_function["name"] || "";
-            row.insertCell().textContent = filename;
-            row.insertCell().textContent = covered_function["count"] ?? 0;
-            row.insertCell().textContent = platform;
-            function_report_state.functions += 1;
+        let expanded_file_ids = new Set(covered_function["expandedFiles"] || []);
+        let filename = filenames.find((_, file_id) => !expanded_file_ids.has(file_id));
+        if (!filename) {
+            continue;
         }
+        let file_path = `./${filename.replace(/^\.?\//, "")}`;
+        if (!is_path_in_scope(path, file_path)) {
+            continue;
+        }
+
+        let is_covered = Number(covered_function["count"]) > 0;
+        let row = function_table_body.insertRow();
+        row.dataset.coverage = is_covered ? "covered" : "uncovered";
+
+        let status_cell = row.insertCell();
+        let status_badge = document.createElement("span");
+        status_badge.className = `function-badge${is_covered ? "" : " uncovered"}`;
+        status_badge.textContent = is_covered ? "Covered" : "Not covered";
+        status_cell.appendChild(status_badge);
+
+        let function_name_cell = row.insertCell();
+        function_name_cell.textContent = covered_function["demangled_name"] || covered_function["name"] || "(unnamed function)";
+        function_name_cell.title = covered_function["name"] || "";
+        row.insertCell().textContent = filename;
+        row.insertCell().textContent = covered_function["count"] ?? 0;
+        row.insertCell().textContent = platform;
+        function_report_state.functions += 1;
     }
 }
 
@@ -505,7 +540,7 @@ function init_parent_anchor(path) {
     let parent_path = path.split("/").slice(0, -1).join("/");
     if (parent_path) {
         parent_anchor.href = `?path=${parent_path}`;
-        parent_anchor.innerHTML = `Go to parent .. (${parent_path})`;
+        parent_anchor.textContent = `Go to parent .. (${parent_path})`;
     } else {
         parent_anchor.hidden = true;
     }

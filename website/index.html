@@ -4,49 +4,164 @@
 
 <html>
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Code Coverage Results</title>
-    <script src="main.js"></script>
+    <script src="coverage.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body onload="on_load()">
-    <h1><a href="data">Code Coverage Results</a></h1>
-    <ul id="coverage_list"></ul>
-    <h1>Summary</h1>
-    <p>
-      Click
-      <a
-        href="http://clang.llvm.org/docs/SourceBasedCodeCoverage.html#interpreting-reports"
-        target="_blank"
-        >here</a
-      >
-      for information about interpreting this report.
-    </p>
-    <a id="parent_anchor">Go to parent .. </a>
-    <table id="summary_table">
-      <thead id="summary_table_header">
-        <tr>
-          <th>Path</th>
-          <th>Function Coverage</th>
-          <th>Line Coverage</th>
-          <th>Region Coverage</th>
-          <th>Branch Coverage</th>
-        </tr>
-      </thead>
-      <tbody id="summary_table_body"></tbody>
-    </table>
-    <div id="file_details_div">
-      <h1>File Details</h1>
-      <table id="file_details_table" hidden="true">
-        <thead id="file_details_table_header">
-          <tr>
-            <th>#</th>
-            <th>Code</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody id="file_details_table_body"></tbody>
-      </table>
-    </div>
+    <header class="topbar">
+      <a class="brand" href="data">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Coverage<span class="brand-light"> report</span></span>
+      </a>
+      <nav class="report-nav" aria-label="Coverage reports">
+        <span class="nav-label">Reports</span>
+        <ul id="coverage_list" class="coverage-list"></ul>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">CODE QUALITY</p>
+          <h1 id="page-title">Coverage overview</h1>
+          <p class="page-description">
+            Explore test coverage by folder, file, and source line.
+            <a
+              href="https://clang.llvm.org/docs/SourceBasedCodeCoverage.html#interpreting-reports"
+              target="_blank"
+              rel="noopener noreferrer"
+              >How to read this report <span aria-hidden="true">↗</span></a
+            >
+          </p>
+        </div>
+        <a id="parent_anchor" class="parent-link">← Parent folder</a>
+      </section>
+
+      <section class="coverage-overview" aria-label="Coverage totals">
+        <article class="coverage-card" data-stat="lines">
+          <span class="card-label">Lines</span>
+          <strong class="card-value">—</strong>
+          <span class="card-detail">Loading coverage…</span>
+          <span class="progress-track"><span class="progress-value"></span></span>
+        </article>
+        <article class="coverage-card" data-stat="functions">
+          <span class="card-label">Functions</span>
+          <strong class="card-value">—</strong>
+          <span class="card-detail">Loading coverage…</span>
+          <span class="progress-track"><span class="progress-value"></span></span>
+        </article>
+        <article class="coverage-card" data-stat="regions">
+          <span class="card-label">Regions</span>
+          <strong class="card-value">—</strong>
+          <span class="card-detail">Loading coverage…</span>
+          <span class="progress-track"><span class="progress-value"></span></span>
+        </article>
+        <article class="coverage-card" data-stat="branches">
+          <span class="card-label">Branches</span>
+          <strong class="card-value">—</strong>
+          <span class="card-detail">Loading coverage…</span>
+          <span class="progress-track"><span class="progress-value"></span></span>
+        </article>
+      </section>
+
+      <section class="panel" aria-labelledby="summary-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">REPORT DETAILS</p>
+            <h2 id="summary-title">Coverage by path</h2>
+          </div>
+          <span class="section-hint">Select a folder or file to drill in</span>
+        </div>
+        <div class="table-scroll">
+          <table id="summary_table">
+            <thead id="summary_table_header">
+              <tr>
+                <th>Path</th>
+                <th>Function coverage</th>
+                <th>Line coverage</th>
+                <th>Region coverage</th>
+                <th>Branch coverage</th>
+              </tr>
+            </thead>
+            <tbody id="summary_table_body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel function-panel" aria-labelledby="functions-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">FUNCTION INVENTORY</p>
+            <h2 id="functions-title">Covered and uncovered functions</h2>
+          </div>
+          <div class="function-controls">
+            <label class="visually-hidden" for="function_filter">Filter functions by coverage</label>
+            <select id="function_filter">
+              <option value="all">All functions</option>
+              <option value="covered">Covered</option>
+              <option value="uncovered">Not covered</option>
+            </select>
+            <label class="visually-hidden" for="function_search">Search functions</label>
+            <input id="function_search" type="search" placeholder="Search functions" />
+          </div>
+        </div>
+        <p id="function_report_status" class="function-status" role="status" aria-live="polite">
+          Loading function details…
+        </p>
+        <div class="table-scroll">
+          <table id="function_table">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Function</th>
+                <th>File</th>
+                <th>Calls</th>
+                <th>Platform</th>
+              </tr>
+            </thead>
+            <tbody id="function_table_body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="file_details_div" class="panel source-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SOURCE VIEW</p>
+            <h2>File details</h2>
+          </div>
+          <div class="function-controls">
+            <label class="visually-hidden" for="source_report">Source coverage report</label>
+            <select id="source_report" disabled>
+              <option value="">All reports (summed)</option>
+            </select>
+          </div>
+        </div>
+        <p id="source_status" class="function-status" role="status">Loading source coverage...</p>
+        <p id="source_error" class="source-error" role="alert" hidden></p>
+        <div class="source-legend" aria-label="Coverage legend">
+          <span class="covered-line">Covered count</span>
+          <span class="uncovered-line">Uncovered count</span>
+          <span class="uncovered-region">Uncovered source region</span>
+        </div>
+        <div class="table-scroll source-scroll">
+          <table id="file_details_table" hidden="true">
+            <thead id="file_details_table_header">
+              <tr>
+                <th>Line</th>
+                <th id="source_count_header">Count</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody id="file_details_table_body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </body>
 </html>

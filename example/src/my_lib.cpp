@@ -4,7 +4,7 @@
 #include <iostream>
 #include "my_lib.hpp"
 
-void CoverageClass::fnCovered() {
+void CoverageClass::functionCovered() {
     int x = 42;
     bool regionNotCovered = true;
     if (x == 42 || regionNotCovered) {
@@ -17,4 +17,4 @@ void CoverageClass::fnCovered() {
     std::cout << "line not covered" << std::endl;
 }
 
-void CoverageClass::fnNotCovered() {}
+void CoverageClass::functionNotCovered() {}

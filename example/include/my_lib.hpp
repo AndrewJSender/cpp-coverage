@@ -6,8 +6,8 @@
 
 class CoverageClass {
 public:
-    void fnCovered();
-    void fnNotCovered();
+    void functionCovered();
+    void functionNotCovered();
 };
 
 #endif // MY_LIB_HPP

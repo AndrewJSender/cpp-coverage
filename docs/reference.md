@@ -1,50 +1,36 @@
-# References
+# Coverage Tools and Report Formats
 
-## CI
+This reference currently documents the LLVM/Clang workflow. Bullseye and
+OpenCppCoverage documentation is TBD. The example's CMake integration is in
+[example/CMakeLists.txt](../example/CMakeLists.txt); backend selection constants
+are in [src/options.py](../src/options.py).
 
-[Code Coverage Example CI](https://psplatform.ci.corp.adobe.com/job/Phoenix/job/code_coverage_example/) is based around the code coverage example in this repo.
+## Coverage backends
 
-### Jenkins
+| Backend | Status | Instrumentation and input | Notes |
+| --- | --- | --- | --- |
+| LLVM/Clang (`llvm`) | Documented | Compile and link with `-fprofile-instr-generate -fcoverage-mapping`; collect a `.profraw` file. | Report generation uses `llvm-profdata` and `llvm-cov`. On macOS, the scripts can locate these through `xcrun`. |
+| Bullseye (`bullseye`) | TBD | TBD | Documentation to be added. |
+| OpenCppCoverage (`open_cpp_coverage`) | TBD | TBD | Documentation to be added. |
+| gcov | Reference | See the [GCC gcov documentation](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html). | Integration with this project is TBD. |
+| Visual Studio | Reference | See [Microsoft Code Coverage console tool](https://learn.microsoft.com/en-us/visualstudio/test/microsoft-code-coverage-console-tool?view=visualstudio). | Integration with this project is TBD. |
 
-Start with the [psplatform.ci](https://psplatform.ci.corp.adobe.com/) jenkins instance for the available mac resources.
+The reusable report-generation dispatch is in
+[src/profile.py](../src/profile.py). The standalone
+[src/generate_profile.py](../src/generate_profile.py) command is used by the
+LLVM example workflow; it expects `coverage.profraw` in its output directory
+and requires an instrumented test executable.
 
-Slack Channels
+## Generated files
 
-- CI
-- Support
+The LLVM workflow generates:
 
-### Artifactory
+- `coverage.profdata`: merged LLVM profile data.
+- `coverage_details.json`: per-file coverage details.
+- `coverage_summary.json`: summary coverage data used by the website.
+- `coverage.lcov` and `coverage.xml`: interchange exports.
+- `coverage_html/`: LLVM's HTML report.
 
-Create the [generic-code-coverage-release](https://artifactory.corp.adobe.com/ui/native/generic-code-coverage-release) an artifactory repo from [Adobe's devhome](https://devhome.corp.adobe.com/artifacts/repositories)
-
-### Web Server
-
-http://sj1010010244149.corp.adobe.com/website/
-
-#### ATS
-
-Create an ubuntu virtual machine (vm) from [ATS](https://atscloud.corp.adobe.com/#/compute/virtual-compute).
-
-- Enable ports 80 and others to allow HTTP/S traffic to the vm.
-
-#### Apache2
-
-The web server uses apache2 to run the http daemon (httpd). [Follow these steps from ubuntu website](https://ubuntu.com/tutorials/install-and-configure-apache#1-overview)
-
-Note: make sure all folders have `chmod +x` permissions.
-
-For `/etc/apache2/sites-available/gci.con` file
-
-```
-ServerName sj1010010244149.corp.adobe.com
-ServerAdmin sender@adobe.com
-DocumentRoot "/jenkins/code_coverage/gitws-0"
-<Directory "/jenkins/code_coverage/gitws-0">
-        Options Indexes FollowSymLinks
-        Require all granted
-</Directory>
-```
-
-## DVA Coverage Tool
-
-https://git.corp.adobe.com/AdobeShared/coverage
+Bullseye and OpenCppCoverage report formats are TBD.
+The website's data layout and local viewing instructions are in
+[Coverage Website](./coverage-website.md).

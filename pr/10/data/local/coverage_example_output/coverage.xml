@@ -1,0 +1,59 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage
+  SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
+<coverage branch-rate="0.25" branches-covered="1" branches-valid="4" complexity="0" line-rate="0.7222222222222222" lines-covered="13" lines-valid="18" timestamp="1793125080" version="2.0.3">
+	<sources>
+		<source>/Users/runner/work/cpp-coverage/cpp-coverage</source>
+	</sources>
+	<packages>
+		<package line-rate="0.7222222222222222" branch-rate="0.25" name="example.src" complexity="0">
+			<classes>
+				<class branch-rate="0.0" complexity="0" filename="example/src/main.cpp" line-rate="1.0" name="example.src.main.cpp">
+					<methods>
+						<method name="main" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="7" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="1" number="7"/>
+						<line branch="false" hits="1" number="8"/>
+						<line branch="false" hits="1" number="9"/>
+						<line branch="false" hits="1" number="10"/>
+						<line branch="false" hits="1" number="11"/>
+						<line branch="false" hits="1" number="12"/>
+					</lines>
+				</class>
+				<class branch-rate="0.25" complexity="0" filename="example/src/my_lib.cpp" line-rate="0.5833333333333334" name="example.src.my_lib.cpp">
+					<methods>
+						<method name="CoverageClass::functionCovered()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="7" branch="false"/>
+							</lines>
+						</method>
+						<method name="CoverageClass::functionNotCovered()" signature="" line-rate="0.0" branch-rate="0.0">
+							<lines>
+								<line hits="0" number="20" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="1" number="7"/>
+						<line branch="false" hits="1" number="8"/>
+						<line branch="false" hits="1" number="9"/>
+						<line branch="true" hits="1" number="10" condition-coverage="25% (1/4)"/>
+						<line branch="false" hits="1" number="11"/>
+						<line branch="false" hits="1" number="12"/>
+						<line branch="false" hits="0" number="13"/>
+						<line branch="false" hits="0" number="14"/>
+						<line branch="false" hits="1" number="16"/>
+						<line branch="false" hits="0" number="17"/>
+						<line branch="false" hits="0" number="18"/>
+						<line branch="false" hits="0" number="20"/>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+</coverage>

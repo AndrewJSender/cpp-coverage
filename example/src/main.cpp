@@ -7,6 +7,6 @@
 int main() {
     std::cout << "Hello World\n";
     CoverageClass coverage;
-    coverage.fnCovered();
+    coverage.functionCovered();
     return 0;
 }

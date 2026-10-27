@@ -23,27 +23,27 @@ class DemangleFunctionNamesTests(unittest.TestCase):
     def test_adds_readable_names_and_preserves_symbols_across_exports(self):
         details = {
             "data": [
-                {"functions": [{"name": "_ZN13CoverageClass9fnCoveredEv", "count": 1}]},
+                {"functions": [{"name": "_ZN13CoverageClass9functionCoveredEv", "count": 1}]},
                 {"functions": [{"name": "main", "count": 0}]},
             ],
             "version": "3.0.1",
         }
         self.write_details(details)
         result = subprocess.CompletedProcess(
-            ["c++filt"], 0, stdout="CoverageClass::fnCovered()\nmain\n"
+            ["c++filt"], 0, stdout="CoverageClass::functionCovered()\nmain\n"
         )
         with patch("llvm.subprocess.run", return_value=result) as run:
             demangle_function_names(self.details_path, "c++filt")
 
         run.assert_called_once_with(
             ["c++filt"],
-            input="_ZN13CoverageClass9fnCoveredEv\nmain\n",
+            input="_ZN13CoverageClass9functionCoveredEv\nmain\n",
             capture_output=True,
             text=True,
             encoding="utf-8",
             check=True,
         )
-        details["data"][0]["functions"][0]["demangled_name"] = "CoverageClass::fnCovered()"
+        details["data"][0]["functions"][0]["demangled_name"] = "CoverageClass::functionCovered()"
         details["data"][1]["functions"][0]["demangled_name"] = "main"
         self.assertEqual(json.loads(self.details_path.read_text(encoding="utf-8")), details)
 

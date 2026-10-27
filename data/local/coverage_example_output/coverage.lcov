@@ -15,10 +15,10 @@ LF:6
 LH:6
 end_of_record
 SF:/Users/runner/work/cpp-coverage/cpp-coverage/example/src/my_lib.cpp
-FN:7,_ZN13CoverageClass9fnCoveredEv
-FN:20,_ZN13CoverageClass12fnNotCoveredEv
-FNDA:1,_ZN13CoverageClass9fnCoveredEv
-FNDA:0,_ZN13CoverageClass12fnNotCoveredEv
+FN:7,_ZN13CoverageClass15functionCoveredEv
+FN:20,_ZN13CoverageClass18functionNotCoveredEv
+FNDA:1,_ZN13CoverageClass15functionCoveredEv
+FNDA:0,_ZN13CoverageClass18functionNotCoveredEv
 FNF:2
 FNH:1
 DA:7,1

@@ -13,6 +13,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -130,8 +131,15 @@ def report_files(path: Path) -> list[Path]:
         return [details]
     split = path / "code_coverage_details"
     files = sorted((split if split.is_dir() else path).rglob("*.json"))
+    if files:
+        return files
+    files = sorted(
+        candidate
+        for pattern in ("*.xml", "*.lcov", "*.info")
+        for candidate in path.rglob(pattern)
+    )
     if not files:
-        raise ValueError(f"No coverage JSON files found in {path}")
+        raise ValueError(f"No supported coverage reports found in {path}")
     return files
 
 
@@ -142,6 +150,82 @@ def normalize_filename(filename: str, roots: list[str]) -> str:
         if name.startswith(prefix):
             return name[len(prefix):]
     return name
+
+
+def load_cobertura(path: Path, repo: Path) -> dict[str, dict[int, int]]:
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError as error:
+        raise ValueError(f"{path}: invalid XML: {error}") from error
+    if root.tag.rsplit("}", 1)[-1] != "coverage":
+        raise ValueError(f"{path}: expected a Cobertura coverage XML document")
+
+    roots = [str(repo)]
+    for element in root.iter():
+        if element.tag.rsplit("}", 1)[-1] == "source" and element.text:
+            roots.append(element.text.strip())
+
+    files: dict[str, dict[int, int]] = {}
+    for element in root.iter():
+        if element.tag.rsplit("}", 1)[-1] != "class":
+            continue
+        filename = element.get("filename")
+        if not filename:
+            raise ValueError(f"{path}: Cobertura class is missing its filename")
+        name = normalize_filename(filename, roots)
+        lines = files.setdefault(name, {})
+        for line in element.iter():
+            if line.tag.rsplit("}", 1)[-1] != "line":
+                continue
+            number = line.get("number")
+            hits = line.get("hits")
+            try:
+                line_number = int(number) if number is not None else 0
+                count = int(hits) if hits is not None else -1
+            except ValueError as error:
+                raise ValueError(f"{path}: invalid Cobertura line in {filename}") from error
+            if line_number < 1 or count < 0:
+                raise ValueError(f"{path}: invalid Cobertura line in {filename}")
+            lines[line_number] = max(lines.get(line_number, 0), count)
+    if not files:
+        raise ValueError(f"{path}: no file-level Cobertura coverage data")
+    return files
+
+
+def load_lcov(path: Path, repo: Path) -> dict[str, dict[int, int]]:
+    files: dict[str, dict[int, int]] = {}
+    filename = None
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError:
+        raise
+    for text in content.splitlines():
+        if text == "end_of_record":
+            filename = None
+            continue
+        if text.startswith("SF:"):
+            filename = text[3:]
+            if not filename:
+                raise ValueError(f"{path}: LCOV source record has an empty filename")
+            files.setdefault(normalize_filename(filename, [str(repo)]), {})
+        elif text.startswith("DA:"):
+            if filename is None:
+                raise ValueError(f"{path}: LCOV line record appears before a source record")
+            parts = text[3:].split(",")
+            if len(parts) < 2:
+                raise ValueError(f"{path}: invalid LCOV line record: {text}")
+            try:
+                number, count = int(parts[0]), int(parts[1])
+            except ValueError as error:
+                raise ValueError(f"{path}: invalid LCOV line record: {text}") from error
+            if number < 1 or count < 0:
+                raise ValueError(f"{path}: invalid LCOV line record: {text}")
+            name = normalize_filename(filename, [str(repo)])
+            lines = files[name]
+            lines[number] = max(lines.get(number, 0), count)
+    if not files or not any(files.values()):
+        raise ValueError(f"{path}: no line coverage data in LCOV report")
+    return files
 
 
 def load_coverage(
@@ -155,6 +239,28 @@ def load_coverage(
             if resolved in seen:
                 raise ValueError(f"Duplicate coverage input: {report_path}")
             seen.add(resolved)
+            if report_path.suffix.lower() == ".xml":
+                files = load_cobertura(report_path, repo)
+                for name, counts in files.items():
+                    coverage.setdefault(name, []).append(counts)
+                if evidence is not None:
+                    evidence.append({
+                        "path": str(report_path),
+                        "files": {name: {} for name in files},
+                        "line_only": True,
+                    })
+                continue
+            if report_path.suffix.lower() in (".lcov", ".info"):
+                files = load_lcov(report_path, repo)
+                for name, counts in files.items():
+                    coverage.setdefault(name, []).append(counts)
+                if evidence is not None:
+                    evidence.append({
+                        "path": str(report_path),
+                        "files": {name: {} for name in files},
+                        "line_only": True,
+                    })
+                continue
             with report_path.open(encoding="utf-8") as report_file:
                 report = json.load(report_file)
             if not isinstance(report, dict):
@@ -300,6 +406,20 @@ def analyze_details(
         matching = [report for report in evidence if filename in report["files"]]
         expected_hash = source_digest(repo, filename, target) if matching else None
         for report in matching:
+            if report.get("line_only"):
+                unsupported = []
+                if "regions" in metrics:
+                    unsupported.append("region")
+                if "branches" in metrics:
+                    unsupported.append("branch")
+                if scope == "functions":
+                    unsupported.append("function")
+                if unsupported:
+                    invalid(
+                        filename, report["path"],
+                        f"{', '.join(unsupported)} coverage unavailable in line-only report",
+                    )
+                continue
             info = report["build_info"]
             if info.get("git_commit") != expected_commit:
                 invalid(filename, report["path"], "missing or mismatched report revision")
@@ -506,7 +626,7 @@ def main(argv: list[str] | None = None) -> int:
         help="One or more coverage details JSON files or report directories",
     )
     parser.add_argument("--repo", type=Path, default=Path.cwd(), help="Git repository directory")
-    parser.add_argument("--format", choices=["text", "json"], default="text")
+    parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
     parser.add_argument("--include", action="append", default=[], help="Repository-relative glob to include (repeatable)")
     parser.add_argument("--exclude", action="append", default=[], help="Repository-relative glob to exclude (repeatable)")
     parser.add_argument("--metrics", nargs="+", choices=["lines", "regions", "branches"], default=["lines", "regions", "branches"])

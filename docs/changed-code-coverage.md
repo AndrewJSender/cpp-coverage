@@ -15,11 +15,20 @@ python src/git.py HEAD~1..HEAD --coverage build/coverage_example_output --format
 ```
 
 Inputs accept LLVM `coverage_details.json`, an individual split file JSON, a
-`code_coverage_details` directory, or a report directory containing either.
-Full LLVM exports are recommended. Regenerated LLVM split reports retain the
-same function regions and provenance. Split JSON reports produced from Cobertura
-can provide line counts, but cannot satisfy region/branch checks if those details
-are unavailable. Summary-only reports, HTML, LCOV, and raw XML are not accepted.
+`code_coverage_details` directory, Cobertura XML, or LCOV files (`.lcov` or
+`.info`). When a report directory has no JSON reports, its XML and LCOV reports
+are discovered automatically. Full LLVM exports are recommended. Regenerated
+LLVM split reports retain the same function regions and provenance. Cobertura
+XML and LCOV provide line coverage only; select `--metrics lines` to use them.
+They cannot provide region, branch, or function checks, nor the revision and
+source-hash validation available from detailed JSON. Summary-only JSON, HTML,
+and raw XML are not accepted.
+
+```zsh
+# Line-only comparison against Cobertura XML and/or LCOV.
+python src/git.py main --coverage build/coverage_example_output/coverage.xml --metrics lines
+python src/git.py main --coverage reports/coverage.lcov --metrics lines
+```
 
 Each changed line is labeled `covered` (positive count in any report), `uncovered`
 (instrumented but zero hits in all reports), `not_instrumented` (the file is in a

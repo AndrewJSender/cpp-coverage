@@ -105,6 +105,51 @@ class CoverageTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "summary-only"):
                 load_coverage([full], root)
 
+    def test_load_cobertura_and_lcov_line_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            source = repo / "a.cpp"
+            xml_path = repo / "coverage.xml"
+            xml_path.write_text(
+                f"""<?xml version="1.0"?>
+                <coverage><sources><source>{repo}</source></sources><packages><package>
+                  <classes><class filename="a.cpp"><lines>
+                    <line number="1" hits="3"/><line number="2" hits="0"/>
+                  </lines></class></classes>
+                </package></packages></coverage>""",
+                encoding="utf-8",
+            )
+            lcov_path = repo / "coverage.lcov"
+            lcov_path.write_text(
+                f"TN:\nSF:{source}\nDA:1,0\nDA:2,4\nend_of_record\n",
+                encoding="utf-8",
+            )
+            evidence = []
+            coverage = load_coverage([xml_path, lcov_path], repo, evidence)
+            self.assertEqual(coverage, {"a.cpp": [{1: 3, 2: 0}, {1: 0, 2: 4}]})
+            self.assertEqual(len(evidence), 2)
+            self.assertTrue(all(report["line_only"] for report in evidence))
+            discovered = load_coverage([repo], repo)
+            self.assertEqual(
+                sorted(discovered["a.cpp"], key=lambda report: sorted(report.items())),
+                sorted(coverage["a.cpp"], key=lambda report: sorted(report.items())),
+            )
+            result = compare_coverage({"a.cpp": {1: "old"}}, coverage)
+            self.assertEqual(result["summary"]["covered"], 1)
+
+    def test_reject_malformed_cobertura_and_lcov_line_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            xml_path = root / "coverage.xml"
+            xml_path.write_text("<not-coverage/>", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Cobertura"):
+                load_coverage([xml_path], root)
+
+            lcov_path = root / "coverage.lcov"
+            lcov_path.write_text("DA:1,2\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "before a source"):
+                load_coverage([lcov_path], root)
+
     def test_invalid_reports_have_explicit_errors(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -155,6 +200,33 @@ class GitIntegrationTests(unittest.TestCase):
                 }],
             }],
         }
+
+    def test_line_only_report_metric_compatibility(self):
+        report_path = self.repo / "coverage.xml"
+        report_path.write_text(
+            f"""<coverage><sources><source>{self.repo}</source></sources>
+            <packages><package><classes><class filename="{self.source.name}">
+            <lines><line number="1" hits="1"/></lines></class></classes>
+            </package></packages></coverage>""",
+            encoding="utf-8",
+        )
+        evidence = []
+        coverage = load_coverage([report_path], self.repo, evidence)
+        changes = {self.source.name: {1: "old"}}
+        result = compare_coverage(changes, coverage)
+        analyze_details(self.repo, ["HEAD"], changes, evidence, result, ["lines"], "diff")
+        self.assertEqual(result["gate"]["errors"], 0)
+
+        result = compare_coverage(changes, coverage)
+        analyze_details(
+            self.repo, ["HEAD"], changes, evidence, result,
+            ["lines", "regions", "branches"], "diff",
+        )
+        self.assertEqual(result["gate"]["errors"], 1)
+        self.assertIn(
+            "region, branch coverage unavailable",
+            result["validation"]["errors"][0]["message"],
+        )
 
     def analyze(self, reports, changed=None, scope="diff", metrics=None):
         paths = []

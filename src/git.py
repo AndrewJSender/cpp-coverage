@@ -15,6 +15,8 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
+from source_hash import source_hash
+
 
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
@@ -160,10 +162,14 @@ def load_cobertura(path: Path, repo: Path) -> dict[str, dict[int, int]]:
     if root.tag.rsplit("}", 1)[-1] != "coverage":
         raise ValueError(f"{path}: expected a Cobertura coverage XML document")
 
-    roots = [str(repo)]
+    repo_root = posixpath.normpath(str(repo).replace("\\", "/"))
+    sources = []
     for element in root.iter():
         if element.tag.rsplit("}", 1)[-1] == "source" and element.text:
-            roots.append(element.text.strip())
+            source = posixpath.normpath(element.text.strip().replace("\\", "/"))
+            if not posixpath.isabs(source):
+                source = posixpath.normpath(posixpath.join(repo_root, source))
+            sources.append(source)
 
     files: dict[str, dict[int, int]] = {}
     for element in root.iter():
@@ -172,7 +178,19 @@ def load_cobertura(path: Path, repo: Path) -> dict[str, dict[int, int]]:
         filename = element.get("filename")
         if not filename:
             raise ValueError(f"{path}: Cobertura class is missing its filename")
-        name = normalize_filename(filename, roots)
+        filename = filename.replace("\\", "/")
+        candidates = (
+            [filename] if posixpath.isabs(filename)
+            else [posixpath.join(source, filename) for source in sources] + [filename]
+        )
+        name = None
+        for candidate in candidates:
+            relative = normalize_filename(candidate, [repo_root])
+            if not posixpath.isabs(relative):
+                name = relative
+                break
+        if name is None:
+            name = normalize_filename(candidates[0], sources)
         lines = files.setdefault(name, {})
         for line in element.iter():
             if line.tag.rsplit("}", 1)[-1] != "line":
@@ -353,12 +371,11 @@ def compare_coverage(
 
 def source_digest(repo: Path, filename: str, target: str | None) -> str:
     if target is None:
-        data = (repo / filename).read_bytes()
-    else:
-        data = subprocess.run(
-            ["git", "-C", str(repo), "show", f"{target}:{filename}"],
-            check=True, capture_output=True,
-        ).stdout
+        return source_hash(repo, filename, (repo / filename).read_bytes())
+    data = subprocess.run(
+        ["git", "-C", str(repo), "show", f"{target}:{filename}"],
+        check=True, capture_output=True,
+    ).stdout
     return hashlib.sha256(data).hexdigest()
 
 
@@ -425,7 +442,7 @@ def analyze_details(
                 invalid(filename, report["path"], "missing or mismatched report revision")
             hashes = info.get("source_hashes", {})
             if not isinstance(hashes, dict) or hashes.get(filename) != expected_hash:
-                invalid(filename, report["path"], "missing or mismatched source SHA-256")
+                invalid(filename, report["path"], "missing or mismatched source hash")
             if report["type"] == "llvm.coverage.json.export" and report["version"] not in ("2.0.1", "3.0.1"):
                 invalid(filename, report["path"], "unsupported LLVM export version")
             file = report["files"][filename]

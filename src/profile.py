@@ -2,12 +2,12 @@
 # Licensed under the MIT License. See LICENSE for details.
 
 import json
-import hashlib
 from pathlib import Path
 import re
 import xml.etree.ElementTree as XmlET
 import logging
 
+from source_hash import source_hash
 from options import COVERAGE_OPTION_NAME, CLANG_STR, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR
 from llvm import profile_llvm_data
 from open_cpp_coverage import profile_open_cpp_coverage_data
@@ -46,9 +46,10 @@ async def adjust_json_file(file_path, build_info):
             if not source.is_absolute():
                 source = project_root / source
             if source.is_relative_to(project_root):
-                source_hashes[source.relative_to(project_root).as_posix()] = hashlib.sha256(
-                    source.read_bytes()
-                ).hexdigest()
+                filename = source.relative_to(project_root).as_posix()
+                source_hashes[filename] = source_hash(
+                    project_root, filename, source.read_bytes()
+                )
     this_json["build_info"] = {**build_info, "source_hashes": source_hashes}
 
     with open(file_path, "w") as f:
@@ -61,21 +62,34 @@ async def split_details(details_json_path):
 
     code_coverage_dir = Path(details_json_path).parent / "code_coverage_details"
     code_coverage_dir.mkdir(parents=True, exist_ok=True)
+    file_occurrences = {}
     for export in details_json["data"]:
         for file in export["files"]:
             if "filename" not in file:
                 continue
-            file_path = code_coverage_dir / Path(file["filename"] + ".json")
+            filename = file["filename"]
+            occurrence = file_occurrences.get(filename, 0)
+            file_occurrences[filename] = occurrence + 1
+            suffix = f".{occurrence}" if occurrence else ""
+            file_path = code_coverage_dir / Path(filename + suffix + ".json")
             file_dir = file_path.parent
             file_dir.mkdir(parents=True, exist_ok=True)
+            build_info = details_json["build_info"]
+            source_hashes = build_info.get("source_hashes", {})
             with open(file_path, "w") as f:
                 json.dump({
                     **file,
                     "functions": [
                         function for function in export.get("functions", [])
-                        if file["filename"] in function.get("filenames", [])
+                        if filename in function.get("filenames", [])
                     ],
-                    "build_info": details_json["build_info"],
+                    "build_info": {
+                        **build_info,
+                        "source_hashes": (
+                            {filename: source_hashes[filename]}
+                            if filename in source_hashes else {}
+                        ),
+                    },
                     "type": details_json.get("type"),
                     "version": details_json.get("version"),
                 }, f)

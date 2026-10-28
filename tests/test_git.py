@@ -3,9 +3,11 @@
 
 import contextlib
 import asyncio
+import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -136,6 +138,26 @@ class CoverageTests(unittest.TestCase):
             )
             result = compare_coverage({"a.cpp": {1: "old"}}, coverage)
             self.assertEqual(result["summary"]["covered"], 1)
+
+    def test_cobertura_resolves_source_relative_and_absolute_class_filenames(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            (repo / "example" / "src").mkdir(parents=True)
+            report_path = repo / "coverage.xml"
+            report_path.write_text(
+                f"""<coverage><sources><source>{repo}/example</source></sources>
+                <packages><package><classes>
+                  <class filename="src/main.cpp"><lines><line number="1" hits="1"/></lines></class>
+                  <class filename="{repo}/example/src/other.cpp">
+                    <lines><line number="2" hits="0"/></lines>
+                  </class>
+                </classes></package></packages></coverage>""",
+                encoding="utf-8",
+            )
+            self.assertEqual(load_coverage([report_path], repo), {
+                "example/src/main.cpp": [{1: 1}],
+                "example/src/other.cpp": [{2: 0}],
+            })
 
     def test_reject_malformed_cobertura_and_lcov_line_records(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -338,6 +360,70 @@ class GitIntegrationTests(unittest.TestCase):
         analyze_details(self.repo, ["HEAD"], {self.source.name: {1: "old"}}, evidence, result,
                         ["lines", "regions", "branches"], "diff")
         self.assertEqual(result["gate"]["errors"], 0)
+
+    def test_split_generation_preserves_duplicate_exports_and_only_their_hash(self):
+        report = self.details()
+        report["build_info"]["source_hashes"]["other.cpp"] = "unused"
+        second_export = self.details()["data"][0]
+        second_export["files"][0]["segments"][0][2] = 0
+        report["data"].append(second_export)
+        path = self.repo / "coverage_details.json"
+        path.write_text(json.dumps(report), encoding="utf-8")
+        asyncio.run(split_details(path))
+
+        split_paths = sorted((self.repo / "code_coverage_details").glob("*.json"))
+        self.assertEqual(len(split_paths), 2)
+        self.assertEqual(
+            [json.loads(split_path.read_text())["build_info"]["source_hashes"]
+             for split_path in split_paths],
+            [{self.source.name: report["build_info"]["source_hashes"][self.source.name]}] * 2,
+        )
+        changes = {self.source.name: {1: "old"}}
+        full_evidence = []
+        full = compare_coverage(changes, load_coverage([path], self.repo, full_evidence))
+        analyze_details(
+            self.repo, ["HEAD"], changes, full_evidence, full,
+            ["lines", "regions", "branches"], "diff",
+        )
+        split_evidence = []
+        split = compare_coverage(
+            changes,
+            load_coverage([self.repo / "code_coverage_details"], self.repo, split_evidence),
+        )
+        analyze_details(
+            self.repo, ["HEAD"], changes, split_evidence, split,
+            ["lines", "regions", "branches"], "diff",
+        )
+        self.assertEqual(full, split)
+        self.assertEqual(split["summary"]["covered"], 1)
+
+    def test_source_hash_uses_git_cleaned_bytes_but_detects_edits(self):
+        run_git(self.repo, "config", "core.autocrlf", "true")
+        self.source.write_bytes(b"old\r\nkeep\r\nremoved\r\n")
+        report = self.details()
+        path = self.repo / "coverage_details.json"
+        path.write_text(json.dumps(report), encoding="utf-8")
+        asyncio.run(adjust_json_file(path, report["build_info"]))
+        adjusted = json.loads(path.read_text())
+        blob = subprocess.run(
+            ["git", "-C", str(self.repo), "show", f"{self.base}:{self.source.name}"],
+            check=True, capture_output=True,
+        ).stdout
+        self.assertEqual(
+            adjusted["build_info"]["source_hashes"][self.source.name],
+            hashlib.sha256(blob).hexdigest(),
+        )
+
+        self.source.write_bytes(b"edited\r\nkeep\r\nremoved\r\n")
+        asyncio.run(adjust_json_file(path, adjusted["build_info"]))
+        evidence = []
+        counts = load_coverage([path], self.repo, evidence)
+        result = compare_coverage({self.source.name: {1: "old"}}, counts)
+        analyze_details(
+            self.repo, [self.base, self.base], {self.source.name: {1: "old"}},
+            evidence, result, ["lines"], "diff",
+        )
+        self.assertEqual(result["gate"]["errors"], 1)
 
     def test_include_exclude_and_success_exit_for_uncovered_gate(self):
         self.source.write_text("changed\nkeep\nremoved\n", encoding="utf-8")

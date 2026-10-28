@@ -59,22 +59,7 @@ jobs:
 
       - name: Enforce PR coverage from JSON
         if: github.event_name == 'pull_request'
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          report = json.loads(Path("diff-coverage.json").read_text())
-          gate = report["gate"]
-          def escape(value):
-              return str(value).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(",", "%2C").replace(":", "%3A")
-          for finding in gate["lines"]:
-              print(f"::error file={escape(finding['file'])},line={finding['line']}::{escape('; '.join(finding['reasons']))}")
-          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-              summary.write(f"\n### PR diff coverage\n\nFailing changed lines: {gate['uncovered']}\n\nValidation errors: {gate['errors']}\n")
-          if gate["uncovered"] > 0 or gate["errors"] > 0:
-              raise SystemExit("PR coverage requirements not met; see diff-coverage artifact.")
-          PY
+        run: python3 src/enforce_diff_coverage.py diff-coverage.json
 
   deploy-pages:
     name: Deploy Pages

@@ -4,6 +4,7 @@
 import subprocess
 import os
 import json
+import re
 from pathlib import Path
 import logging
 
@@ -21,7 +22,7 @@ def llvm_profile_path():
 def run_subprocess(cmd_parts, out_path):
     with open(out_path, "w") as outfile:
         logger.debug("Running: %s", " ".join(cmd_parts))
-        subprocess.run(cmd_parts, stdout=outfile)
+        subprocess.run(cmd_parts, stdout=outfile, check=True)
 
 
 def demangle_function_names(details_json_path: Path, llvm_cxxfilt: str) -> None:
@@ -65,11 +66,15 @@ async def profile_llvm_data(
     gen_lcov=False,
     gen_lcov_to_cobertura=False,
 ):
-    project_root = Path(build_info["project_root"])
-    ignore_filename_regex = f"{project_root}/{output_directory}"
+    ignore_filename_regex = re.escape(str(Path(output_directory).resolve()))
     coverage_file_path = llvm_profile_path()
-    profile_stem = coverage_file_path.stem
+    profile_stem = "coverage"
     test_output_path = coverage_file_path.parent
+    profiles = sorted(test_output_path.glob("coverage*.profraw"))
+    if coverage_file_path.is_file() and coverage_file_path not in profiles:
+        profiles.append(coverage_file_path)
+    if not profiles:
+        raise FileNotFoundError(f"No raw coverage profiles found in {test_output_path}")
 
     if platform in ["macos", "ios"]:
         llvm_profdata = await ctx.eval_async("$(xcode_tool llvm-profdata)")
@@ -77,8 +82,6 @@ async def profile_llvm_data(
         llvm_cxxfilt = await ctx.eval_async("$(xcode_tool c++filt)")
     elif platform in ["win32"]:
         msvs_path = await ctx.eval_async("$(msvs_install_dir)")
-        ignore_filename_regex = f"{project_root}\\{output_directory}"
-        ignore_filename_regex = ignore_filename_regex.replace("\\", "\\\\")
         llvm_profdata = await ctx.eval_async(
             f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-profdata.exe"
         )
@@ -108,7 +111,7 @@ async def profile_llvm_data(
         llvm_profdata,
         "merge",
         "-sparse",
-        f"{test_output_path}/{profile_stem}.profraw",
+        *(str(path) for path in profiles),
         "-o",
         f"{test_output_path}/{profile_stem}.profdata",
     ]
@@ -130,7 +133,7 @@ async def profile_llvm_data(
         logger.info("Generating lcov to cobertura data")
         xml_path = Path(f"{test_output_path}", "coverage.xml")
         demangle = True
-        base_dir = project_root.__str__()
+        base_dir = str(build_info["project_root"])
         excludes = []
         with open(lcov_path, 'r') as lcov_file:
             lcov_data = lcov_file.read()

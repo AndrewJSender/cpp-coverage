@@ -2,6 +2,7 @@
 # Licensed under the MIT License. See LICENSE for details.
 
 import json
+import hashlib
 from pathlib import Path
 import re
 import xml.etree.ElementTree as XmlET
@@ -37,7 +38,18 @@ async def adjust_json_file(file_path, build_info):
     logger.debug("Adjusting json file: %s", file_path)
     with open(file_path, "r") as f:
         this_json = json.load(f)
-    this_json["build_info"] = build_info
+    source_hashes = {}
+    project_root = Path(build_info["project_root"])
+    for export in this_json.get("data", []):
+        for file in export.get("files", []):
+            source = Path(file["filename"])
+            if not source.is_absolute():
+                source = project_root / source
+            if source.is_relative_to(project_root):
+                source_hashes[source.relative_to(project_root).as_posix()] = hashlib.sha256(
+                    source.read_bytes()
+                ).hexdigest()
+    this_json["build_info"] = {**build_info, "source_hashes": source_hashes}
 
     with open(file_path, "w") as f:
         json.dump(this_json, f)
@@ -49,14 +61,24 @@ async def split_details(details_json_path):
 
     code_coverage_dir = Path(details_json_path).parent / "code_coverage_details"
     code_coverage_dir.mkdir(parents=True, exist_ok=True)
-    for file in details_json["data"][0]["files"]:
-        if "filename" not in file:
-            continue
-        file_path = code_coverage_dir / Path(file["filename"] + ".json")
-        file_dir = file_path.parent
-        file_dir.mkdir(parents=True, exist_ok=True)
-        with open(file_path, "w") as f:
-            json.dump(file, f)
+    for export in details_json["data"]:
+        for file in export["files"]:
+            if "filename" not in file:
+                continue
+            file_path = code_coverage_dir / Path(file["filename"] + ".json")
+            file_dir = file_path.parent
+            file_dir.mkdir(parents=True, exist_ok=True)
+            with open(file_path, "w") as f:
+                json.dump({
+                    **file,
+                    "functions": [
+                        function for function in export.get("functions", [])
+                        if file["filename"] in function.get("filenames", [])
+                    ],
+                    "build_info": details_json["build_info"],
+                    "type": details_json.get("type"),
+                    "version": details_json.get("version"),
+                }, f)
 
 
 async def profile_data(

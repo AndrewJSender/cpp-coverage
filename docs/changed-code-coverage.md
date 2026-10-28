@@ -30,6 +30,18 @@ python src/git.py main --coverage build/coverage_example_output/coverage.xml --m
 python src/git.py main --coverage reports/coverage.lcov --metrics lines
 ```
 
+## Why not use diff-cover?
+
+[diff-cover](https://pypi.org/project/diff_cover/) is a good fit for a
+line-only changed-coverage check and supports common formats including Cobertura
+XML and LCOV. This project uses `git.py` because its CI gate also checks LLVM
+regions, branch outcomes, and whole functions, and validates that reports match
+the destination revision and source hashes. Those checks are not provided by
+diff-cover. The XML and LCOV support here is for line-only comparisons; it does
+not replace the LLVM details and provenance needed for the full gate. Using
+diff-cover for that mode would mean maintaining a second comparison and gate
+path without replacing these project-specific checks.
+
 Each changed line is labeled `covered` (positive count in any report), `uncovered`
 (instrumented but zero hits in all reports), `not_instrumented` (the file is in a
 report, but no report maps that line), or `missing` (no report contains the file).

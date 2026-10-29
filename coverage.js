@@ -4,6 +4,7 @@
 const STATS_TYPE_ORDER = ["functions", "lines", "regions", "branches"];
 let function_report_state = { pending: 0, loaded: 0, errors: 0, functions: 0 };
 const source_report_state = { lines: null, reports: new Map(), pending: new Set(), errors: new Set() };
+let source_selection = null;
 
 function is_path_in_scope(path, file_path) {
     let directory = path.endsWith("/") ? path.slice(0, -1) : path;
@@ -160,6 +161,96 @@ function source_column_offset(text, column) {
     return offset;
 }
 
+function get_source_selection(url_params) {
+    let parameter_names = ["lnStart", "colStart", "lnEnd", "colEnd"];
+    if (!parameter_names.every(name => url_params.has(name))) {
+        return null;
+    }
+
+    let [ln_start, col_start, ln_end, col_end] = parameter_names.map(name => Number(url_params.get(name)));
+    if (![ln_start, col_start, ln_end, col_end].every(value => Number.isSafeInteger(value) && value > 0)) {
+        return null;
+    }
+    if (ln_start > ln_end || (ln_start === ln_end && col_start > col_end)) {
+        return null;
+    }
+    return { ln_start, col_start, ln_end, col_end };
+}
+
+function source_selection_range(text, line) {
+    if (!source_selection || line < source_selection.ln_start || line > source_selection.ln_end) {
+        return null;
+    }
+
+    let start = line === source_selection.ln_start && source_selection.col_start !== null
+        ? source_column_offset(text, source_selection.col_start)
+        : 0;
+    let end = line === source_selection.ln_end && source_selection.col_end !== null
+        ? source_column_offset(text, source_selection.col_end)
+        : text.length;
+    return start < end ? { start, end } : null;
+}
+
+function source_position(cell, node, offset) {
+    let row = cell.parentElement;
+    let line_match = row.id.match(/^L(\d+)$/);
+    if (!line_match) {
+        return null;
+    }
+
+    let prefix = document.createRange();
+    prefix.setStart(cell, 0);
+    prefix.setEnd(node, offset);
+    let character_offset = prefix.toString().length;
+    let text = source_report_state.lines[Number(line_match[1]) - 1];
+    return {
+        line: Number(line_match[1]),
+        column: new TextEncoder().encode(text.slice(0, character_offset)).length + 1
+    };
+}
+
+function update_source_selection_url() {
+    let selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+        return;
+    }
+
+    let range = selection.getRangeAt(0);
+    let start_element = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    let end_element = range.endContainer.nodeType === Node.ELEMENT_NODE
+        ? range.endContainer
+        : range.endContainer.parentElement;
+    let start_cell = start_element?.closest("#file_details_table td:nth-child(3)");
+    let end_cell = end_element?.closest("#file_details_table td:nth-child(3)");
+    if (!start_cell || !end_cell || !source_report_state.lines) {
+        return;
+    }
+
+    let start = source_position(start_cell, range.startContainer, range.startOffset);
+    let end = source_position(end_cell, range.endContainer, range.endOffset);
+    if (start && end && (start.line < end.line || (start.line === end.line && start.column < end.column))) {
+        update_source_selection_url_for_range(start, end);
+    }
+}
+
+function update_source_selection_url_for_range(start, end) {
+    let url = new URL(window.location.href);
+    url.searchParams.set("lnStart", start.line);
+    url.searchParams.set("colStart", start.column);
+    url.searchParams.set("lnEnd", end.line);
+    url.searchParams.set("colEnd", end.column);
+    url.hash = "";
+    window.history.replaceState(null, "", url);
+    source_selection = {
+        ln_start: start.line,
+        col_start: start.column,
+        ln_end: end.line,
+        col_end: end.column
+    };
+}
+
 function build_line_coverage(lines, segments) {
     let coverage = lines.map(() => ({ count: null, ranges: [] }));
     // Cobertura-derived reports use column zero for independent line hits.
@@ -221,6 +312,7 @@ function render_source_coverage() {
         .map(([, details]) => build_line_coverage(source_report_state.lines, details.segments));
     let body = document.getElementById("file_details_table_body");
     body.replaceChildren();
+    let selection_target = null;
     source_report_state.lines.forEach((text, index) => {
         let row = body.insertRow();
         row.id = `L${index + 1}`;
@@ -239,19 +331,35 @@ function render_source_coverage() {
 
         let source_cell = row.insertCell();
         let ranges = stats.flatMap(line => line.ranges);
-        let boundaries = [...new Set([0, text.length, ...ranges.flatMap(range => [range.start, range.end])])]
+        let selection_range = source_selection_range(text, index + 1);
+        let boundaries = [...new Set([
+            0,
+            text.length,
+            ...ranges.flatMap(range => [range.start, range.end]),
+            ...(selection_range ? [selection_range.start, selection_range.end] : [])
+        ])]
             .sort((a, b) => a - b);
         for (let boundary = 0; boundary < boundaries.length - 1; boundary++) {
             let start = boundaries[boundary];
             let end = boundaries[boundary + 1];
             let covering = ranges.filter(range => range.start <= start && range.end >= end);
             let part = text.slice(start, end);
-            if (covering.length && covering.every(range => range.count === 0)) {
+            let uncovered = covering.length && covering.every(range => range.count === 0);
+            let highlighted = selection_range && selection_range.start <= start && selection_range.end >= end;
+            if (uncovered || highlighted) {
                 let span = document.createElement("span");
-                span.className = "uncovered-region";
-                span.title = "Uncovered region: 0 executions";
+                span.className = [
+                    uncovered ? "uncovered-region" : "",
+                    highlighted ? "source-selection" : ""
+                ].filter(Boolean).join(" ");
+                if (uncovered) {
+                    span.title = "Uncovered region: 0 executions";
+                }
                 span.textContent = part;
                 source_cell.appendChild(span);
+                if (highlighted && selection_target === null) {
+                    selection_target = span;
+                }
             } else {
                 source_cell.appendChild(document.createTextNode(part));
             }
@@ -278,7 +386,10 @@ function render_source_coverage() {
             : "Line counts and uncovered regions for the selected report. Blank counts are not instrumented.";
     }
     document.getElementById("source_status").textContent = status;
-    if (window.location.hash) {
+    if (source_selection) {
+        (selection_target ?? document.getElementById(`L${source_selection.ln_start}`))
+            ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } else if (window.location.hash) {
         document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "nearest" });
     }
 }
@@ -576,10 +687,12 @@ function on_load() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.has("path") ? urlParams.get("path") : ".";
+    source_selection = get_source_selection(urlParams);
     init_parent_anchor(path);
     document.getElementById("function_filter").addEventListener("change", apply_function_filters);
     document.getElementById("function_search").addEventListener("input", apply_function_filters);
     document.getElementById("source_report").addEventListener("change", render_source_coverage);
+    document.addEventListener("selectionchange", update_source_selection_url);
 
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);

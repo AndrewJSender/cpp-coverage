@@ -21,6 +21,7 @@
     --warning-soft: #fff4e5;
     --uncovered: #b42336;
     --uncovered-soft: #fde8eb;
+    --selection-soft: #fff2a8;
     --shadow: 0 14px 38px rgb(25 42 70 / 5%);
 }
 
@@ -565,6 +566,12 @@ td {
     text-underline-offset: 3px;
 }
 
+.source-selection {
+    background: var(--selection-soft);
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
+}
+
 .source-error {
     margin: 0;
     padding: 0 22px 14px;
@@ -592,6 +599,7 @@ td {
         --warning-soft: #3e3021;
         --uncovered: #ffb2b7;
         --uncovered-soft: #522931;
+        --selection-soft: #574b1f;
         --shadow: 0 14px 38px rgb(0 0 0 / 14%);
     }
 }

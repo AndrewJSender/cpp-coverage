@@ -11,7 +11,7 @@ This project reads coverage artifacts from tools such as LLVM, Bullseye, and Ope
 Install the `coverage-analytics` command line tool from PyPI, or in editable mode from a checkout:
 
 ```zsh
-pip install coverage-analytics
+pip install cpp-coverage
 # or, from a checkout:
 pip install -e .
 ```

@@ -1,7 +1,7 @@
 # Changed-Code Coverage
 
 Compare added/modified destination lines with one or more coverage details reports.
-Install the CLI with `pip install coverage-analytics` (or `pip install -e .` from
+Install the CLI with `pip install cpp-coverage` (or `pip install -e .` from
 a checkout):
 
 ```zsh

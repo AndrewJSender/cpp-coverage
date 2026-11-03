@@ -5,7 +5,7 @@ A small coverage tooling project for generating coverage reports and a static we
 ## Installation
 
 ```zsh
-pip install coverage-analytics
+pip install cpp-coverage
 ```
 
 ## Quick start

@@ -54,7 +54,11 @@ class CoverageContext:
             return shutil.which("c++filt") or _xcrun_path("c++filt")
         if expression == "$(which llvm-profdata)":
             found = shutil.which("llvm-profdata")
-            return str(Path(found).parent) if found else "/usr/lib/llvm-18/bin"
+            if found:
+                return str(Path(found).parent)
+            if platform.system() == "Windows":
+                return "C:/Program Files/LLVM/bin"
+            return "/usr/lib/llvm-18/bin"
         if "$(" not in expression:
             # Literal paths (e.g. resolved tool paths) evaluate to themselves.
             return expression

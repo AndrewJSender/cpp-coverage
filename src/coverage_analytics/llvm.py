@@ -81,17 +81,10 @@ async def profile_llvm_data(
         llvm_cov = await ctx.eval_async("$(xcode_tool llvm-cov)")
         llvm_cxxfilt = await ctx.eval_async("$(xcode_tool c++filt)")
     elif platform in ["win32"]:
-        msvs_path = await ctx.eval_async("$(msvs_install_dir)")
-        llvm_profdata = await ctx.eval_async(
-            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-profdata.exe"
-        )
-        llvm_cov = await ctx.eval_async(
-            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-cov.exe"
-        )
-        llvm_cxxfilt = await ctx.eval_async(
-            f"{msvs_path}/VC/Tools/Llvm/x64/bin/llvm-cxxfilt.exe"
-        )
-
+        llvm_bin_path = await ctx.eval_async("$(which llvm-profdata)")
+        llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata.exe")
+        llvm_cov = await ctx.eval_async(f"{llvm_bin_path}/llvm-cov.exe")
+        llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/llvm-cxxfilt.exe")
     elif platform in ["linux"]:
         llvm_bin_path = await ctx.eval_async("$(which llvm-profdata)")
         llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata")

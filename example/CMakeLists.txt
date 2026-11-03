@@ -17,7 +17,9 @@ target_include_directories(coverage_example PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}
 enable_testing()
 add_test(NAME coverage_example COMMAND coverage_example)
 
-set(COVERAGE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/coverage_example_output")
+set(COVERAGE_OUTPUT_DIR "coverage_example_output" CACHE PATH
+    "Directory receiving coverage profile data and reports (the default resolves inside the build directory)")
+get_filename_component(COVERAGE_OUTPUT_DIR "${COVERAGE_OUTPUT_DIR}" ABSOLUTE BASE_DIR "${CMAKE_BINARY_DIR}")
 
 if(ENABLE_COVERAGE AND COVERAGE_TOOL STREQUAL "llvm")
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")

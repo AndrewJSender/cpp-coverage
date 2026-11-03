@@ -39,14 +39,22 @@ jobs:
       - name: Generate Project
         run: |
           cmake -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
-            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ \
+            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_linux
 
       - name: Build, Run Tests, and Generate Coverage
         run: cmake --build build --target generate_profile_data
 
+      - name: Upload coverage website data
+        uses: actions/upload-artifact@main
+        with:
+          name: coverage-data-linux
+          path: website/data
+          if-no-files-found: error
+
   windows:
     runs-on: windows-latest
-    name: Windows Run Tests
+    name: Windows Build, Run Tests, and Generate Coverage Data
     steps:
       - name: Check out repository
         uses: actions/checkout@main
@@ -63,6 +71,23 @@ jobs:
 
       - name: Run Python regression tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Generate Project
+        shell: bash
+        run: |
+          cmake -G Ninja -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ \
+            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_windows
+
+      - name: Build, Run Tests, and Generate Coverage
+        run: cmake --build build --target generate_profile_data
+
+      - name: Upload coverage website data
+        uses: actions/upload-artifact@main
+        with:
+          name: coverage-data-windows
+          path: website/data
+          if-no-files-found: error
 
   macos:
     runs-on: macos-latest
@@ -86,16 +111,17 @@ jobs:
 
       - name: Generate Project
         run: |
-          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm
+          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_macos
 
       - name: Build, Run Tests, and Generate Coverage
         run: cmake --build build --config Debug --target generate_profile_data
 
-      - name: Upload Pages site
+      - name: Upload coverage website data
         uses: actions/upload-artifact@main
         with:
-          name: coverage-website
-          path: website
+          name: coverage-data-macos
+          path: website/data
           if-no-files-found: error
 
       - name: Analyze PR coverage
@@ -104,7 +130,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           coverage-analytics diff "$BASE_SHA...HEAD" \
-            --coverage build/coverage_example_output \
+            --coverage build/coverage_example_output_macos \
             --include 'example/*.cpp' --include 'example/*.hpp' \
             --format json > diff-coverage.json
 
@@ -123,7 +149,7 @@ jobs:
   deploy-pages:
     name: Deploy Pages
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: macos
+    needs: [macos, linux, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -139,11 +165,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@main
 
-      - name: Download coverage website
+      - name: Download coverage website data
         uses: actions/download-artifact@main
         with:
-          name: coverage-website
-          path: coverage-website
+          pattern: coverage-data-*
+          path: coverage-data
+
+      - name: Assemble coverage website from all platforms
+        run: |
+          cp -R website coverage-website
+          mkdir -p coverage-website/data/local
+          cp coverage-data/coverage-data-macos/files.json coverage-website/data/files.json
+          for data_dir in coverage-data/coverage-data-*; do
+            cp -R "$data_dir"/local/. coverage-website/data/local/
+          done
+          jq -s 'add' coverage-data/coverage-data-*/manifest.json \
+            > coverage-website/data/manifest.json
 
       - name: Include example sources in coverage website
         run: |

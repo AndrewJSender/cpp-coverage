@@ -4,6 +4,10 @@
 #include <iostream>
 #include "my_lib.hpp"
 
+void failingFunction() {
+    std::cout << "This function is not covered by tests\n";
+}
+
 int main() {
     std::cout << "Hello World\n";
     CoverageClass coverage;

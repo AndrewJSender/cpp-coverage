@@ -55,7 +55,9 @@ if(ENABLE_COVERAGE AND COVERAGE_TOOL STREQUAL "llvm")
         COMMAND ${CMAKE_CTEST_COMMAND} --build-config "$<CONFIG>" --output-on-failure
         COMMAND ${CMAKE_COMMAND} -E env
             "LLVM_PROFILE_FILE=${LLVM_PROFILE}"
-            ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/../src/generate_profile.py"
+            "PYTHONPATH=${CMAKE_SOURCE_DIR}/../src"
+            ${Python3_EXECUTABLE} -m coverage_analytics.cli profile
+            --project-root "${CMAKE_SOURCE_DIR}/.."
             --test-binary "$<TARGET_FILE:coverage_example>"
             --output-directory "${COVERAGE_OUTPUT_DIR}"
         DEPENDS coverage_example

@@ -10,3 +10,8 @@ website/data/
 
 # Python Cache
 *__pycache__/
+
+# Python Packaging
+dist/
+*.egg-info/
+.venv/

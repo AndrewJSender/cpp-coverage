@@ -10,8 +10,10 @@ from coverage_analytics.artifactory import download_zip, extract_zip
 
 logger = logging.getLogger(__name__)
 
-ROOT_PATH = Path(__file__).resolve().parent.parent
-website_data_path = Path(ROOT_PATH, "website", "data")
+
+def default_website_data_path() -> Path:
+    """Default location of the website data directory, relative to the working directory."""
+    return Path.cwd() / "website" / "data"
 
 def update_file_manifest(files_manifest: dict, root_path: Path, parent_path, file: str):
     if file == ".DS_Store":
@@ -27,7 +29,8 @@ def update_file_manifest(files_manifest: dict, root_path: Path, parent_path, fil
     subfolder["files"].update({file_relative_path.name: file_path_str})
 
 
-async def generate_website(ctx, src_list, root_path: Path):
+async def generate_website(ctx, src_list, root_path: Path, website_data_path: Path | None = None):
+    website_data_path = website_data_path or default_website_data_path()
     files_manifest = {
         ".": {},
         "files": {},
@@ -45,8 +48,9 @@ async def generate_website(ctx, src_list, root_path: Path):
         json.dump(files_manifest, files_json_file)
 
 
-async def copy_local_data(ctx):
+async def copy_local_data(ctx, website_data_path: Path | None = None):
     logger.debug("Copying local data")
+    website_data_path = website_data_path or default_website_data_path()
     src = Path(ctx.args["test_output_directory"])
     dst = Path(website_data_path, "local", src.name)
     manifest = {}
@@ -78,8 +82,10 @@ async def download_remote_data(
     artifactory_api_key: str,
     urls: list[str],
     appendage_bug: Path = None,
+    website_data_path: Path | None = None,
 ):
     logger.debug("Downloading remote data")
+    website_data_path = website_data_path or default_website_data_path()
     zip_dir_path = website_data_path / "zipped_files"
     unzip_path = website_data_path / "unzipped_files"
 

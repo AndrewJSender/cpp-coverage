@@ -13,6 +13,57 @@ permissions:
   pull-requests: read
 
 jobs:
+  linux:
+    runs-on: ubuntu-latest
+    name: Linux Build, Run Tests, and Generate Coverage Data
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Install LLVM tools
+        run: sudo apt-get update && sudo apt-get install -y llvm clang
+
+      - name: Install coverage-analytics
+        run: python3 -m pip install -e .
+
+      - name: Run Python regression tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Generate Project
+        run: |
+          cmake -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+
+      - name: Build, Run Tests, and Generate Coverage
+        run: cmake --build build --target generate_profile_data
+
+  windows:
+    runs-on: windows-latest
+    name: Windows Run Tests
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Install coverage-analytics
+        run: python -m pip install -e .
+
+      - name: Run Python regression tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
   macos:
     runs-on: macos-latest
     name: MacOS Build, Run Tests, and Generate Coverage Data
@@ -22,8 +73,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Install coverage-analytics
+        run: python3 -m pip install -e .
+
       - name: Run Python regression tests
-        run: PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py' -v
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Generate Project
         run: |
@@ -44,7 +103,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 src/git.py "$BASE_SHA...HEAD" \
+          coverage-analytics diff "$BASE_SHA...HEAD" \
             --coverage build/coverage_example_output \
             --include 'example/*.cpp' --include 'example/*.hpp' \
             --format json > diff-coverage.json
@@ -59,7 +118,7 @@ jobs:
 
       - name: Enforce PR coverage from JSON
         if: github.event_name == 'pull_request'
-        run: python3 src/enforce_diff_coverage.py diff-coverage.json
+        run: coverage-analytics gate diff-coverage.json
 
   deploy-pages:
     name: Deploy Pages

@@ -1,17 +1,19 @@
 # Changed-Code Coverage
 
-Compare added/modified destination lines with one or more coverage details reports:
+Compare added/modified destination lines with one or more coverage details reports.
+Install the CLI with `pip install coverage-analytics` (or `pip install -e .` from
+a checkout):
 
 ```zsh
 # Compare a branch/commit with the current tracked working tree (staged + unstaged).
-python src/git.py main --coverage build/coverage_example_output
+coverage-analytics diff main --coverage build/coverage_example_output
 
 # Compare two commits, or changes since the branches' merge base.
-python src/git.py main HEAD --coverage reports/linux reports/macos
-python src/git.py main...HEAD --coverage reports/linux/coverage_details.json
+coverage-analytics diff main HEAD --coverage reports/linux reports/macos
+coverage-analytics diff main...HEAD --coverage reports/linux/coverage_details.json
 
 # Machine-readable output; --repo can select another repository.
-python src/git.py HEAD~1..HEAD --coverage build/coverage_example_output --format json
+coverage-analytics diff HEAD~1..HEAD --coverage build/coverage_example_output --format json
 ```
 
 Inputs accept LLVM `coverage_details.json`, an individual split file JSON, a
@@ -26,15 +28,15 @@ and raw XML are not accepted.
 
 ```zsh
 # Line-only comparison against Cobertura XML and/or LCOV.
-python src/git.py main --coverage build/coverage_example_output/coverage.xml --metrics lines
-python src/git.py main --coverage reports/coverage.lcov --metrics lines
+coverage-analytics diff main --coverage build/coverage_example_output/coverage.xml --metrics lines
+coverage-analytics diff main --coverage reports/coverage.lcov --metrics lines
 ```
 
 ## Why not use diff-cover?
 
 [diff-cover](https://pypi.org/project/diff_cover/) is a good fit for a
 line-only changed-coverage check and supports common formats including Cobertura
-XML and LCOV. This project uses `git.py` because its CI gate also checks LLVM
+XML and LCOV. This project uses `coverage-analytics diff` because its CI gate also checks LLVM
 regions, branch outcomes, and whole functions, and validates that reports match
 the destination revision and source hashes. Those checks are not provided by
 diff-cover. The XML and LCOV support here is for line-only comparisons; it does
@@ -58,7 +60,7 @@ inputs, or `--scope functions` to check the complete functions containing change
 including otherwise unchanged regions, branches, and instrumented lines.
 
 ```zsh
-python src/git.py main...HEAD --coverage reports/linux reports/macos \
+coverage-analytics diff main...HEAD --coverage reports/linux reports/macos \
  --include 'example/*.cpp' --include 'example/*.hpp' \
  --exclude 'example/generated/*' --scope functions --format json
 ```
@@ -105,7 +107,7 @@ unreadable reports, or malformed data still exit with 2; CI must not ignore that
 For example:
 
 ```zsh
-python src/git.py main...HEAD --coverage build/coverage_example_output \
+coverage-analytics diff main...HEAD --coverage build/coverage_example_output \
  --include 'example/*.cpp' --format json > diff-coverage.json
 jq -e '.schema_version == 1 and .gate.uncovered == 0 and .gate.errors == 0' diff-coverage.json
 ```
@@ -124,5 +126,6 @@ all `coverage*.profraw` files in the output directory. Parallel tests use
 Run the Python regression tests with:
 
 ```zsh
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
+pip install -e .
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```

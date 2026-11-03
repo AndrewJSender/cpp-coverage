@@ -7,17 +7,31 @@
 import argparse
 import asyncio
 import logging
+import os
 import platform
 import shutil
 import subprocess
 from pathlib import Path
 
-from profile import profile_data, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR, CLANG_STR
-from website import copy_local_data, generate_website
+from coverage_analytics.profile import profile_data, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR, CLANG_STR
+from coverage_analytics.website import copy_local_data, generate_website
 
 
 logger = logging.getLogger(__name__)
-ROOT_PATH = Path(__file__).resolve().parent.parent
+
+
+def default_project_root() -> Path:
+    """Return the enclosing Git repository root, or the working directory."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return Path(result.stdout.strip())
+    except (OSError, subprocess.CalledProcessError):
+        return Path.cwd()
 
 
 class CoverageContext:
@@ -38,8 +52,16 @@ class CoverageContext:
             return shutil.which("llvm-cov") or _xcrun_path("llvm-cov")
         if expression == "$(xcode_tool c++filt)":
             return shutil.which("c++filt") or _xcrun_path("c++filt")
-        if expression == "/usr/lib/llvm-18/bin":
+        if expression == "$(which llvm-profdata)":
+            found = shutil.which("llvm-profdata")
+            if found:
+                return str(Path(found).parent)
+            if platform.system() == "Windows":
+                return "C:/Program Files/LLVM/bin"
             return "/usr/lib/llvm-18/bin"
+        if "$(" not in expression:
+            # Literal paths (e.g. resolved tool paths) evaluate to themselves.
+            return expression
         raise ValueError(f"Unsupported context expression: {expression}")
 
     async def copy(self, source: Path, destination: Path) -> None:
@@ -58,10 +80,10 @@ def _xcrun_path(tool: str) -> str:
     return result.stdout.strip()
 
 
-def _git_commit() -> str:
+def _git_commit(project_root: Path) -> str:
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        cwd=ROOT_PATH,
+        cwd=project_root,
         check=True,
         capture_output=True,
         text=True,
@@ -70,7 +92,15 @@ def _git_commit() -> str:
 
 
 async def generate(args: argparse.Namespace) -> None:
-    output_directory = args.output_directory.resolve()
+    project_root = args.project_root.resolve()
+    website_directory = args.website_directory
+    if website_directory is None:
+        website_directory = project_root / "website"
+    website_data_path = website_directory.resolve() / "data"
+    output_directory = args.output_directory
+    if output_directory is None:
+        output_directory = project_root / "build" / "coverage"
+    output_directory = output_directory.resolve()
     output_directory.mkdir(parents=True, exist_ok=True)
     profile_path = output_directory / "coverage.profraw"
     if not list(output_directory.glob("coverage*.profraw")):
@@ -80,8 +110,8 @@ async def generate(args: argparse.Namespace) -> None:
         "branch_name": args.branch_name,
         "build_number": args.build_number,
         "hostname": platform.node(),
-        "project_root": str(ROOT_PATH),
-        "git_commit": _git_commit(),
+        "project_root": str(project_root),
+        "git_commit": _git_commit(project_root),
     }
     context = CoverageContext(output_directory)
     platform_name = {
@@ -91,8 +121,6 @@ async def generate(args: argparse.Namespace) -> None:
     }.get(platform.system())
     if platform_name is None:
         raise RuntimeError(f"Unsupported platform: {platform.system()}")
-
-    import os
 
     os.environ["LLVM_PROFILE_FILE"] = str(profile_path)
     await profile_data(
@@ -110,17 +138,25 @@ async def generate(args: argparse.Namespace) -> None:
     await generate_website(
         context,
         [args.source_directory],
-        ROOT_PATH,
+        project_root,
+        website_data_path,
     )
-    await copy_local_data(context)
+    await copy_local_data(context, website_data_path)
 
     logger.info("Coverage reports written to %s", output_directory)
-    logger.info("Website data written to %s", ROOT_PATH / "website" / "data")
+    logger.info("Website data written to %s", website_data_path)
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate LLVM coverage reports and website data."
+        prog="coverage-analytics profile",
+        description="Generate LLVM coverage reports and website data.",
+    )
+    parser.add_argument(
+        "--project-root",
+        type=Path,
+        default=default_project_root(),
+        help="Project root directory (defaults to the enclosing Git repository).",
     )
     parser.add_argument(
         "--source-directory",
@@ -138,8 +174,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-directory",
         type=Path,
-        default=ROOT_PATH / "build" / "coverage",
-        help="Directory containing coverage.profraw and receiving reports.",
+        default=None,
+        help="Directory containing coverage.profraw and receiving reports "
+        "(defaults to <project-root>/build/coverage).",
+    )
+    parser.add_argument(
+        "--website-directory",
+        type=Path,
+        default=None,
+        help="Website directory receiving generated data "
+        "(defaults to <project-root>/website).",
     )
     parser.add_argument("--branch-name", default="local")
     parser.add_argument("--build-number", type=int, default=0)
@@ -149,9 +193,16 @@ def parse_args() -> argparse.Namespace:
         default=CLANG_STR,
         help="Coverage tool to use.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
+    asyncio.run(generate(parse_args(argv)))
+    return 0
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
-    asyncio.run(generate(parse_args()))
+    import sys
+
+    sys.exit(main())

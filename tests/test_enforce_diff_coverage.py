@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from enforce_diff_coverage import main
+from coverage_analytics.enforce_diff_coverage import main
 
 
 class EnforceDiffCoverageTests(unittest.TestCase):

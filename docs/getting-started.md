@@ -6,6 +6,22 @@ A small coverage tooling project for generating coverage reports and a static we
 
 This project reads coverage artifacts from tools such as LLVM, Bullseye, and OpenCppCoverage, converts them into a consistent summary format, and generates a local website for exploring the results.
 
+## Installation
+
+Install the `coverage-analytics` command line tool from PyPI, or in editable mode from a checkout:
+
+```zsh
+pip install coverage-analytics
+# or, from a checkout:
+pip install -e .
+```
+
+The CLI provides three commands:
+
+- `coverage-analytics profile`: generate coverage reports and website data from test outputs
+- `coverage-analytics diff`: analyze coverage of changed lines between Git revisions
+- `coverage-analytics gate`: enforce the changed-coverage gate in CI
+
 ## Example
 
 The example builds a single `coverage_example` executable from `example/src/main.cpp`.
@@ -64,7 +80,8 @@ export LLVM_PROFILE_FILE="$test_output_path/coverage.profraw"
 #### Generate Profile & Website
 
 ```zsh
-python src/generate_profile.py \
+pip install -e .
+coverage-analytics profile \
  --test-binary="$root_path/build/Debug/$target" \
  --output-directory="$test_output_path"
 ```

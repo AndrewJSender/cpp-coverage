@@ -15,7 +15,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
-from source_hash import source_hash
+from coverage_analytics.source_hash import source_hash
 
 
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -145,6 +145,11 @@ def report_files(path: Path) -> list[Path]:
     return files
 
 
+def is_absolute_path(name: str) -> bool:
+    """POSIX-absolute or Windows drive-letter-absolute (posixpath.isabs misses the latter)."""
+    return posixpath.isabs(name) or bool(re.match(r"^[A-Za-z]:/", name))
+
+
 def normalize_filename(filename: str, roots: list[str]) -> str:
     name = posixpath.normpath(filename.replace("\\", "/"))
     for root in sorted(roots, key=len, reverse=True):
@@ -167,7 +172,7 @@ def load_cobertura(path: Path, repo: Path) -> dict[str, dict[int, int]]:
     for element in root.iter():
         if element.tag.rsplit("}", 1)[-1] == "source" and element.text:
             source = posixpath.normpath(element.text.strip().replace("\\", "/"))
-            if not posixpath.isabs(source):
+            if not is_absolute_path(source):
                 source = posixpath.normpath(posixpath.join(repo_root, source))
             sources.append(source)
 
@@ -180,13 +185,13 @@ def load_cobertura(path: Path, repo: Path) -> dict[str, dict[int, int]]:
             raise ValueError(f"{path}: Cobertura class is missing its filename")
         filename = filename.replace("\\", "/")
         candidates = (
-            [filename] if posixpath.isabs(filename)
+            [filename] if is_absolute_path(filename)
             else [posixpath.join(source, filename) for source in sources] + [filename]
         )
         name = None
         for candidate in candidates:
             relative = normalize_filename(candidate, [repo_root])
-            if not posixpath.isabs(relative):
+            if not is_absolute_path(relative):
                 name = relative
                 break
         if name is None:
@@ -633,7 +638,7 @@ def analyze_details(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="coverage-analytics diff", description=__doc__)
     parser.add_argument(
         "revisions", nargs="+",
         help="Base ref (compared to working tree), two refs, or A..B / A...B",

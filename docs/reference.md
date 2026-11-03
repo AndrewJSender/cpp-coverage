@@ -3,7 +3,7 @@
 This reference currently documents the LLVM/Clang workflow. Bullseye and
 OpenCppCoverage documentation is TBD. The example's CMake integration is in
 [example/CMakeLists.txt](../example/CMakeLists.txt); backend selection constants
-are in [src/options.py](../src/options.py).
+are in [src/coverage_analytics/options.py](../src/coverage_analytics/options.py).
 
 ## Coverage backends
 
@@ -16,10 +16,11 @@ are in [src/options.py](../src/options.py).
 | Visual Studio | Reference | See [Microsoft Code Coverage console tool](https://learn.microsoft.com/en-us/visualstudio/test/microsoft-code-coverage-console-tool?view=visualstudio). | Integration with this project is TBD. |
 
 The reusable report-generation dispatch is in
-[src/profile.py](../src/profile.py). The standalone
-[src/generate_profile.py](../src/generate_profile.py) command is used by the
-LLVM example workflow; it expects `coverage.profraw` in its output directory
-and requires an instrumented test executable.
+[src/coverage_analytics/profile.py](../src/coverage_analytics/profile.py). The
+`coverage-analytics profile` command
+([src/coverage_analytics/generate_profile.py](../src/coverage_analytics/generate_profile.py))
+is used by the LLVM example workflow; it expects `coverage.profraw` in its
+output directory and requires an instrumented test executable.
 
 ## Generated files
 

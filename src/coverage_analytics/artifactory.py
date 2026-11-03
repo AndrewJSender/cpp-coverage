@@ -1,11 +1,10 @@
 # Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
 # Licensed under the MIT License. See LICENSE for details.
 
-import ssl
 from urllib.request import Request, urlopen
 import json
+import shutil
 import zipfile
-import os
 from pathlib import Path
 import logging
 
@@ -13,20 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 def request_attempt(request: Request) -> dict:
-    """attempt to make the request"""
-    context = ssl._create_unverified_context()
-    maxTries = 3
-    for attempt in range(1, maxTries):
+    """attempt to make the request, retrying on failure"""
+    max_tries = 3
+    last_error = None
+    for attempt in range(1, max_tries + 1):
         try:
-            with urlopen(request, timeout=90, context=context) as response:
-                response_json = json.loads(response.read())
-            break  # success
+            # urlopen verifies TLS certificates by default
+            with urlopen(request, timeout=90) as response:
+                return json.loads(response.read())
         except Exception as e:
-            print(f"Attempt {attempt} failed with error: {e}")
-            if attempt >= maxTries:
-                return {"errors": [{"status": e}]}
+            last_error = e
+            logger.warning("Attempt %d of %d failed with error: %s", attempt, max_tries, e)
 
-    return response_json
+    return {"errors": [{"status": str(last_error)}]}
 
 def request_aql(api_key: str, remote_url: str, aql_unencoded: str) -> dict:
     """run the AQL query
@@ -86,11 +84,14 @@ def get_directory_contents(api_key: str, aql: str, artifactory_root) -> list:
 
 async def download_zip(artifactory_api_key, url, zip_dir_path: Path):
     zip_file_name = url.split("/")[-1]
+    zip_file_path = zip_dir_path / zip_file_name
     logger.debug("Downloading %s to %s", zip_file_name, zip_dir_path)
-    curl_cmd = f'curl -H "X-JFrog-Art-Api: {artifactory_api_key}" -O {url}'
-    os.chdir(zip_dir_path)
-    os.system(curl_cmd)
-    return zip_dir_path / zip_file_name
+    request = Request(url)
+    request.add_header("X-JFrog-Art-Api", artifactory_api_key)
+    with urlopen(request, timeout=90) as response:
+        with open(zip_file_path, "wb") as zip_file:
+            shutil.copyfileobj(response, zip_file)
+    return zip_file_path
 
 async def extract_zip(zip_file_path: Path, unzip_path: Path):
     logger.debug("Unzipping %s to %s", zip_file_path, unzip_path)

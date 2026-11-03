@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coverage-analytics"
+version = "0.1.0"
+description = "C++ coverage reports, changed-code PR gating with coverage provenance checks, and a static coverage website."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Andrew J. Sender", email = "AndrewJ.Sender@gmail.com" }]
+keywords = [
+    "coverage",
+    "code-coverage",
+    "c++",
+    "cpp",
+    "llvm",
+    "diff-coverage",
+    "changed-code-coverage",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/AndrewJSender/coverage-analytics"
+Documentation = "https://github.com/AndrewJSender/coverage-analytics/tree/main/docs"
+Repository = "https://github.com/AndrewJSender/coverage-analytics"
+Issues = "https://github.com/AndrewJSender/coverage-analytics/issues"
+
+[project.scripts]
+coverage-analytics = "coverage_analytics.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

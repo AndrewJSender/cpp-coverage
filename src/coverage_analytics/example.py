@@ -5,13 +5,13 @@ from pathlib import Path
 import os
 import logging
 
-from profile import profile_data
-from bundle import build_info_dict, get_git_commit
-from website import generate_website, copy_local_data, download_remote_data
-from test import get_ios_device
-from artifactory import get_directory_contents, gen_aql
-from open_cpp_coverage import run_with_open_cpp_coverage
-from options import COVERAGE_OPTION_NAME, BULLSEYE_STR, OPEN_CPP_COVERAGE_STR
+from coverage_analytics.profile import profile_data
+from coverage_analytics.bundle import build_info_dict, get_git_commit
+from coverage_analytics.website import generate_website, copy_local_data, download_remote_data
+from coverage_analytics.test import get_ios_device
+from coverage_analytics.artifactory import get_directory_contents, gen_aql
+from coverage_analytics.open_cpp_coverage import run_with_open_cpp_coverage
+from coverage_analytics.options import COVERAGE_OPTION_NAME, BULLSEYE_STR, OPEN_CPP_COVERAGE_STR
 
 logger = logging.getLogger(__name__)
 

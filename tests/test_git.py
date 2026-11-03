@@ -11,11 +11,11 @@ import subprocess
 import tempfile
 import unittest
 
-from git import (
+from coverage_analytics.git import (
     added_lines, analyze_details, changed_lines, compare_coverage, line_counts, load_coverage,
     main, normalize_filename, run_git, source_digest,
 )
-from profile import adjust_json_file, split_details
+from coverage_analytics.profile import adjust_json_file, split_details
 
 
 class CoverageTests(unittest.TestCase):
@@ -157,6 +157,24 @@ class CoverageTests(unittest.TestCase):
             self.assertEqual(load_coverage([report_path], repo), {
                 "example/src/main.cpp": [{1: 1}],
                 "example/src/other.cpp": [{2: 0}],
+            })
+
+    def test_cobertura_resolves_windows_drive_letter_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_path = Path(directory) / "coverage.xml"
+            report_path.write_text(
+                """<coverage><sources><source>C:\\work\\repo</source></sources>
+                <packages><package><classes>
+                  <class filename="src/main.cpp"><lines><line number="1" hits="1"/></lines></class>
+                  <class filename="C:/work/repo/src/other.cpp">
+                    <lines><line number="2" hits="0"/></lines>
+                  </class>
+                </classes></package></packages></coverage>""",
+                encoding="utf-8",
+            )
+            self.assertEqual(load_coverage([report_path], Path("C:/work/repo")), {
+                "src/main.cpp": [{1: 1}],
+                "src/other.cpp": [{2: 0}],
             })
 
     def test_reject_malformed_cobertura_and_lcov_line_records(self):

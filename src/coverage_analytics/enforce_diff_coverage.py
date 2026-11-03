@@ -22,13 +22,13 @@ def escape_annotation(value: object) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="coverage-analytics gate", description=__doc__)
     parser.add_argument(
         "report",
         nargs="?",
         type=Path,
         default=Path("diff-coverage.json"),
-        help="Path to the JSON report produced by src/git.py",
+        help="Path to the JSON report produced by `coverage-analytics diff`",
     )
     args = parser.parse_args(argv)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")

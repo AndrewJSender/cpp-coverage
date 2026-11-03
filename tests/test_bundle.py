@@ -5,7 +5,7 @@ import asyncio
 from pathlib import Path
 import unittest
 
-from coverage_analytics.bundle import build_info_dict, get_git_commit
+from coverage_analytics.archived.bundle import build_info_dict, get_git_commit
 
 
 class StubContext:

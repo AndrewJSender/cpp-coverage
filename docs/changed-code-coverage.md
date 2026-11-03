@@ -89,7 +89,18 @@ JSON schema version 1 preserves `summary` and `lines` (line-only classifications
 and adds `regions`, `branches`, `functions`, `function_lines`, per-metric totals,
 the comparison/policy, validation errors, and `gate`. Each region/branch finding
 includes source coordinates and the changed lines affected. Whole-function gaps
-are attributed back to the changed lines in that function.
+are attributed back to the changed lines in that function. With `--link-base`,
+uncovered findings and every `gate.lines` entry also carry a `url` that opens
+the coverage website with the exact source range highlighted:
+
+```zsh
+coverage-analytics diff main...HEAD --coverage build/coverage_example_output \
+ --link-base "https://andrewjsender.github.io/cpp-coverage/pr/4/" --format json
+```
+
+Pass the website URL that serves this revision's reports (for example the
+GitHub Pages PR preview). Region and branch findings link with column
+precision; line, function, and gate findings highlight whole lines.
 
 **CI should block when `gate.uncovered > 0`.** This is the number of unique changed
 lines failing any selected metric, missing file coverage, or evidence validation.
@@ -115,7 +126,9 @@ jq -e '.schema_version == 1 and .gate.uncovered == 0 and .gate.errors == 0' diff
 The GitHub Actions workflow builds/tests the checked-out PR merge tree, compares
 `BASE_SHA...HEAD` against that same tree, and evaluates the JSON gate for
 `example/*.cpp` and `example/*.hpp`. It uploads the website and diff findings,
-emits file/line annotations, and adds a job summary. Configure the **MacOS Build,
+emits file/line annotations, and adds a job summary where each failing line
+links to the Pages PR preview with the uncovered source highlighted. Configure
+the **MacOS Build,
 Run Tests, and Generate Coverage Data** check as required in repository branch
 protection/rulesets; workflow edits alone do not configure that administrative rule.
 Add platform/feature matrix jobs and combine their reports for conditionally

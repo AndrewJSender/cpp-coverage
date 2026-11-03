@@ -13,6 +13,7 @@ import posixpath
 import re
 import subprocess
 import sys
+from urllib.parse import quote, urlencode
 import xml.etree.ElementTree as ET
 
 from coverage_analytics.source_hash import source_hash
@@ -637,6 +638,52 @@ def analyze_details(
     })
 
 
+def finding_url(
+    link_base: str,
+    file: str,
+    start_line: int,
+    start_column: int | None = None,
+    end_line: int | None = None,
+    end_column: int | None = None,
+) -> str:
+    """Build a coverage website URL highlighting the finding's source range.
+
+    Findings without usable column precision highlight whole lines by selecting
+    through column 1 of the line after the range (the website requires all four
+    selection parameters to be positive).
+    """
+    end_line = end_line or start_line
+    params: dict[str, str | int] = {"path": f"./{file}"}
+    if start_column and end_column:
+        params.update({
+            "lnStart": start_line, "colStart": start_column,
+            "lnEnd": end_line, "colEnd": end_column,
+        })
+    else:
+        params.update({
+            "lnStart": start_line, "colStart": 1,
+            "lnEnd": end_line + 1, "colEnd": 1,
+        })
+    return f"{link_base}?{urlencode(params, safe='/', quote_via=quote)}"
+
+
+def add_links(result: dict, link_base: str | None) -> None:
+    """Attach coverage website URLs to uncovered findings and gate failures."""
+    if not link_base:
+        return
+    for item in result["regions"] + result["function_lines"] + result["branches"]:
+        if item["status"] == "uncovered":
+            item["url"] = finding_url(
+                link_base, item["file"], item["start_line"],
+                item.get("start_column"), item["end_line"], item.get("end_column"),
+            )
+    for item in result["functions"]:
+        if item["status"] == "uncovered":
+            item["url"] = finding_url(link_base, item["file"], item["start_line"], None, item["end_line"])
+    for item in result["gate"]["lines"]:
+        item["url"] = finding_url(link_base, item["file"], item["line"])
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="coverage-analytics diff", description=__doc__)
     parser.add_argument(
@@ -653,6 +700,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--exclude", action="append", default=[], help="Repository-relative glob to exclude (repeatable)")
     parser.add_argument("--metrics", nargs="+", choices=["lines", "regions", "branches"], default=["lines", "regions", "branches"])
     parser.add_argument("--scope", choices=["diff", "functions"], default="diff")
+    parser.add_argument(
+        "--link-base", default=None,
+        help="Coverage website URL for this revision (e.g. the Pages PR preview); "
+        "adds a clickable url to uncovered findings and gate failures",
+    )
     args = parser.parse_args(argv)
     if len(args.revisions) > 2:
         parser.error("Specify one base ref, two refs, or one Git range")
@@ -666,6 +718,7 @@ def main(argv: list[str] | None = None) -> int:
         evidence: list[dict] = []
         result = compare_coverage(changes, load_coverage(args.coverage, repo, evidence))
         analyze_details(repo, args.revisions, changes, evidence, result, args.metrics, args.scope)
+        add_links(result, args.link_base)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         message = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)
         parser.exit(2, f"error: {message}\n")
@@ -677,7 +730,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{line['status']:16} {line['file']}:{line['line']} ({count}) {line['source']}")
         print("Summary: " + ", ".join(f"{key}={value}" for key, value in result["summary"].items()))
         for item in result["gate"]["lines"]:
-            print(f"GATE {item['file']}:{item['line']}: {', '.join(item['reasons'])}")
+            location = f"GATE {item['file']}:{item['line']}: {', '.join(item['reasons'])}"
+            print(f"{location} {item['url']}" if "url" in item else location)
         print(f"Gate: uncovered={result['gate']['uncovered']}, errors={result['gate']['errors']}")
     return 0
 

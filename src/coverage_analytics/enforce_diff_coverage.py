@@ -21,6 +21,16 @@ def escape_annotation(value: object) -> str:
     )
 
 
+def escape_message(value: object) -> str:
+    """Escape an annotation message without mangling URL characters."""
+    return (
+        str(value)
+        .replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="coverage-analytics gate", description=__doc__)
     parser.add_argument(
@@ -39,9 +49,12 @@ def main(argv: list[str] | None = None) -> int:
     gate = report["gate"]
     for finding in gate["lines"]:
         reasons = "; ".join(finding["reasons"])
+        message = escape_annotation(reasons)
+        if finding.get("url"):
+            message += f" {escape_message(finding['url'])}"
         print(
             f"::error file={escape_annotation(finding['file'])},"
-            f"line={finding['line']}::{escape_annotation(reasons)}"
+            f"line={finding['line']}::{message}"
         )
 
     with Path(summary_path).open("a", encoding="utf-8") as summary:
@@ -50,6 +63,13 @@ def main(argv: list[str] | None = None) -> int:
             f"Failing changed lines: {gate['uncovered']}\n\n"
             f"Validation errors: {gate['errors']}\n"
         )
+        if gate["lines"]:
+            summary.write("\n| Uncovered change | Reasons |\n| --- | --- |\n")
+            for finding in gate["lines"]:
+                location = f"`{finding['file']}:{finding['line']}`"
+                if finding.get("url"):
+                    location = f"[{location}]({finding['url']})"
+                summary.write(f"| {location} | {'; '.join(finding['reasons'])} |\n")
 
     if gate["uncovered"] > 0 or gate["errors"] > 0:
         print(

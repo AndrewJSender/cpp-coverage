@@ -159,6 +159,24 @@ class CoverageTests(unittest.TestCase):
                 "example/src/other.cpp": [{2: 0}],
             })
 
+    def test_cobertura_resolves_windows_drive_letter_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_path = Path(directory) / "coverage.xml"
+            report_path.write_text(
+                """<coverage><sources><source>C:\\work\\repo</source></sources>
+                <packages><package><classes>
+                  <class filename="src/main.cpp"><lines><line number="1" hits="1"/></lines></class>
+                  <class filename="C:/work/repo/src/other.cpp">
+                    <lines><line number="2" hits="0"/></lines>
+                  </class>
+                </classes></package></packages></coverage>""",
+                encoding="utf-8",
+            )
+            self.assertEqual(load_coverage([report_path], Path("C:/work/repo")), {
+                "src/main.cpp": [{1: 1}],
+                "src/other.cpp": [{2: 0}],
+            })
+
     def test_reject_malformed_cobertura_and_lcov_line_records(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

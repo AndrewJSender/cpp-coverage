@@ -54,7 +54,7 @@ class CoverageContext:
             return shutil.which("c++filt") or _xcrun_path("c++filt")
         if expression == "$(which llvm-profdata)":
             found = shutil.which("llvm-profdata")
-            return str(Path(found).parent) if found else expression
+            return str(Path(found).parent) if found else "/usr/lib/llvm-18/bin"
         raise ValueError(f"Unsupported context expression: {expression}")
 
     async def copy(self, source: Path, destination: Path) -> None:

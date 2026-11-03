@@ -55,6 +55,9 @@ class CoverageContext:
         if expression == "$(which llvm-profdata)":
             found = shutil.which("llvm-profdata")
             return str(Path(found).parent) if found else "/usr/lib/llvm-18/bin"
+        if "$(" not in expression:
+            # Literal paths (e.g. resolved tool paths) evaluate to themselves.
+            return expression
         raise ValueError(f"Unsupported context expression: {expression}")
 
     async def copy(self, source: Path, destination: Path) -> None:

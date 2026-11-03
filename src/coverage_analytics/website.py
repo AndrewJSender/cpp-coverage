@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import logging
 
-from artifactory import download_zip, extract_zip
+from coverage_analytics.artifactory import download_zip, extract_zip
 
 logger = logging.getLogger(__name__)
 

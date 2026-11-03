@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from llvm import demangle_function_names
+from coverage_analytics.llvm import demangle_function_names
 
 
 class DemangleFunctionNamesTests(unittest.TestCase):
@@ -32,7 +32,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
         result = subprocess.CompletedProcess(
             ["c++filt"], 0, stdout="CoverageClass::functionCovered()\nmain\n"
         )
-        with patch("llvm.subprocess.run", return_value=result) as run:
+        with patch("coverage_analytics.llvm.subprocess.run", return_value=result) as run:
             demangle_function_names(self.details_path, "c++filt")
 
         run.assert_called_once_with(
@@ -51,7 +51,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
         for export in ({}, {"functions": []}):
             with self.subTest(export=export):
                 self.write_details({"data": [export]})
-                with patch("llvm.subprocess.run") as run:
+                with patch("coverage_analytics.llvm.subprocess.run") as run:
                     demangle_function_names(self.details_path, "c++filt")
                 run.assert_not_called()
 
@@ -59,7 +59,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
         details = {"data": [{"functions": [{"name": "main"}]}]}
         self.write_details(details)
         with patch(
-            "llvm.subprocess.run",
+            "coverage_analytics.llvm.subprocess.run",
             side_effect=subprocess.CalledProcessError(1, ["c++filt"]),
         ):
             with self.assertRaises(subprocess.CalledProcessError):
@@ -68,7 +68,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
 
     def test_missing_executable_is_reported(self):
         self.write_details({"data": [{"functions": [{"name": "main"}]}]})
-        with patch("llvm.subprocess.run", side_effect=FileNotFoundError("c++filt")):
+        with patch("coverage_analytics.llvm.subprocess.run", side_effect=FileNotFoundError("c++filt")):
             with self.assertRaises(FileNotFoundError):
                 demangle_function_names(self.details_path, "c++filt")
 
@@ -78,7 +78,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
             with self.subTest(output=output):
                 self.write_details(details)
                 result = subprocess.CompletedProcess(["c++filt"], 0, stdout=output)
-                with patch("llvm.subprocess.run", return_value=result):
+                with patch("coverage_analytics.llvm.subprocess.run", return_value=result):
                     with self.assertRaises(ValueError):
                         demangle_function_names(self.details_path, "c++filt")
                 self.assertEqual(

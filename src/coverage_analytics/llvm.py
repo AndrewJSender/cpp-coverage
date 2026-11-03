@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 import logging
 
-from lcov_cobertura import LcovCobertura
+from coverage_analytics.lcov_cobertura import LcovCobertura
 
 logger = logging.getLogger(__name__)
 

@@ -11,11 +11,11 @@ import subprocess
 import tempfile
 import unittest
 
-from git import (
+from coverage_analytics.git import (
     added_lines, analyze_details, changed_lines, compare_coverage, line_counts, load_coverage,
     main, normalize_filename, run_git, source_digest,
 )
-from profile import adjust_json_file, split_details
+from coverage_analytics.profile import adjust_json_file, split_details
 
 
 class CoverageTests(unittest.TestCase):

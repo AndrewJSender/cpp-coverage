@@ -7,12 +7,12 @@ import re
 import xml.etree.ElementTree as XmlET
 import logging
 
-from source_hash import source_hash
-from options import COVERAGE_OPTION_NAME, CLANG_STR, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR
-from llvm import profile_llvm_data
-from open_cpp_coverage import profile_open_cpp_coverage_data
-from bullseye import export_to_xml
-from cobertura import adjust_xml_file, split_xml_data_to_json
+from coverage_analytics.source_hash import source_hash
+from coverage_analytics.options import COVERAGE_OPTION_NAME, CLANG_STR, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR
+from coverage_analytics.llvm import profile_llvm_data
+from coverage_analytics.open_cpp_coverage import profile_open_cpp_coverage_data
+from coverage_analytics.bullseye import export_to_xml
+from coverage_analytics.cobertura import adjust_xml_file, split_xml_data_to_json
 
 logger = logging.getLogger(__name__)
 

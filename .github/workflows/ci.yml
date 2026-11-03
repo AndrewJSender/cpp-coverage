@@ -129,12 +129,17 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PUBLISH_PREVIEW: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
-          OWNER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          LINK_ARGS=()
+          if [[ "$PUBLISH_PREVIEW" == "true" ]]; then
+            OWNER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+            LINK_ARGS=(--link-base "https://$OWNER.github.io/${GITHUB_REPOSITORY#*/}/pr/$PR_NUMBER/")
+          fi
           coverage-analytics diff "$BASE_SHA...HEAD" \
             --coverage build/coverage_example_output_macos \
             --include 'example/*.cpp' --include 'example/*.hpp' \
-            --link-base "https://$OWNER.github.io/${GITHUB_REPOSITORY#*/}/pr/$PR_NUMBER/" \
+            "${LINK_ARGS[@]}" \
             --format json > diff-coverage.json
 
       - name: Upload diff coverage findings
@@ -144,10 +149,6 @@ jobs:
           name: diff-coverage
           path: diff-coverage.json
           if-no-files-found: error
-
-      - name: Enforce PR coverage from JSON
-        if: github.event_name == 'pull_request'
-        run: coverage-analytics gate diff-coverage.json
 
   deploy-pages:
     name: Deploy Pages
@@ -238,3 +239,52 @@ jobs:
         run: |
           printf '### Coverage preview\n\n%s%s\n' \
             "${SITE_URL%/}/" "$PREVIEW_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+  coverage-gate:
+    name: PR coverage gate
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    needs: [macos, linux, windows, deploy-pages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Verify coverage and deployment prerequisites
+        env:
+          MACOS_RESULT: ${{ needs.macos.result }}
+          LINUX_RESULT: ${{ needs.linux.result }}
+          WINDOWS_RESULT: ${{ needs.windows.result }}
+          DEPLOY_RESULT: ${{ needs.deploy-pages.result }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          for result in "$MACOS_RESULT" "$LINUX_RESULT" "$WINDOWS_RESULT"; do
+            if [[ "$result" != "success" ]]; then
+              echo "::error::All platform coverage jobs must succeed before enforcing coverage."
+              exit 1
+            fi
+          done
+          if [[ "$DEPLOY_RESULT" != "success" ]]; then
+            if [[ "$IS_FORK" != "true" || "$DEPLOY_RESULT" != "skipped" ]]; then
+              echo "::error::Coverage preview deployment did not succeed."
+              exit 1
+            fi
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@main
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Install coverage-analytics
+        run: python -m pip install -e .
+
+      - name: Download diff coverage findings
+        uses: actions/download-artifact@main
+        with:
+          name: diff-coverage
+          path: .
+
+      - name: Enforce PR coverage from JSON
+        run: coverage-analytics gate diff-coverage.json

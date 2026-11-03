@@ -128,10 +128,13 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          OWNER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
           coverage-analytics diff "$BASE_SHA...HEAD" \
             --coverage build/coverage_example_output_macos \
             --include 'example/*.cpp' --include 'example/*.hpp' \
+            --link-base "https://$OWNER.github.io/${GITHUB_REPOSITORY#*/}/pr/$PR_NUMBER/" \
             --format json > diff-coverage.json
 
       - name: Upload diff coverage findings

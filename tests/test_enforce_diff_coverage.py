@@ -58,5 +58,25 @@ class EnforceDiffCoverageTests(unittest.TestCase):
         self.assertIn("Failing changed lines: 1", summary)
 
 
+    def test_url_findings_link_annotations_and_summary(self):
+        url = "https://example.invalid/pr/7/?path=./a.cpp&lnStart=3&colStart=1&lnEnd=4&colEnd=1"
+        status, output, errors, summary = self.run_report({
+            "lines": [{
+                "file": "a.cpp",
+                "line": 3,
+                "reasons": ["uncovered region"],
+                "url": url,
+            }],
+            "uncovered": 1,
+            "errors": 0,
+        })
+        self.assertEqual(status, 1)
+        self.assertEqual(
+            output,
+            f"::error file=a.cpp,line=3::uncovered region {url}\n",
+        )
+        self.assertIn(f"| [`a.cpp:3`]({url}) | uncovered region |", summary)
+
+
 if __name__ == "__main__":
     unittest.main()

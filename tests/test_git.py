@@ -12,10 +12,54 @@ import tempfile
 import unittest
 
 from coverage_analytics.git import (
-    added_lines, analyze_details, changed_lines, compare_coverage, line_counts, load_coverage,
-    main, normalize_filename, run_git, source_digest,
+    add_links, added_lines, analyze_details, changed_lines, compare_coverage, finding_url,
+    line_counts, load_coverage, main, normalize_filename, run_git, source_digest,
 )
 from coverage_analytics.profile import adjust_json_file, split_details
+
+
+class FindingUrlTests(unittest.TestCase):
+    def test_column_precise_range(self):
+        self.assertEqual(
+            finding_url("https://site/pr/3/", "src/a.cpp", 5, 7, 6, 2),
+            "https://site/pr/3/?path=./src/a.cpp&lnStart=5&colStart=7&lnEnd=6&colEnd=2",
+        )
+
+    def test_whole_line_range_without_columns(self):
+        self.assertEqual(
+            finding_url("https://site/", "a.cpp", 5, None, 8, None),
+            "https://site/?path=./a.cpp&lnStart=5&colStart=1&lnEnd=9&colEnd=1",
+        )
+
+    def test_zero_columns_fall_back_to_whole_lines(self):
+        self.assertEqual(
+            finding_url("https://site/", "a.cpp", 4, 0, 4, 0),
+            "https://site/?path=./a.cpp&lnStart=4&colStart=1&lnEnd=5&colEnd=1",
+        )
+
+    def test_add_links_skips_covered_and_missing_base(self):
+        result = {
+            "regions": [
+                {"file": "a.cpp", "status": "covered", "start_line": 1, "start_column": 1,
+                 "end_line": 1, "end_column": 2},
+            ],
+            "function_lines": [],
+            "branches": [],
+            "functions": [{"file": "a.cpp", "status": "uncovered", "start_line": 2, "end_line": 4}],
+            "gate": {"lines": [{"file": "a.cpp", "line": 2, "reasons": ["uncovered function"]}]},
+        }
+        add_links(result, None)
+        self.assertNotIn("url", result["functions"][0])
+        add_links(result, "https://site/")
+        self.assertNotIn("url", result["regions"][0])
+        self.assertEqual(
+            result["functions"][0]["url"],
+            "https://site/?path=./a.cpp&lnStart=2&colStart=1&lnEnd=5&colEnd=1",
+        )
+        self.assertEqual(
+            result["gate"]["lines"][0]["url"],
+            "https://site/?path=./a.cpp&lnStart=2&colStart=1&lnEnd=3&colEnd=1",
+        )
 
 
 class CoverageTests(unittest.TestCase):
@@ -543,6 +587,41 @@ class GitIntegrationTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
             main(["invalid-ref", "--coverage", str(report), "--repo", str(self.repo)])
         self.assertEqual(error.exception.code, 2)
+
+    def test_link_base_adds_urls_to_uncovered_findings_and_gate(self):
+        self.source.write_text("changed\nkeep\nremoved\n", encoding="utf-8")
+        report = self.repo / "details.json"
+        report.write_text(json.dumps(self.details()), encoding="utf-8")
+        base = "https://example.invalid/pr/7/"
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            self.assertEqual(main([
+                "HEAD", "--coverage", str(report), "--repo", str(self.repo),
+                "--format", "json", "--link-base", base,
+            ]), 0)
+        result = json.loads(stdout.getvalue())
+        encoded = "path=./file%20%5B1%5D.cpp"
+
+        uncovered_regions = [item for item in result["regions"] if item["status"] == "uncovered"]
+        self.assertEqual(
+            [item["url"] for item in uncovered_regions],
+            [f"{base}?{encoded}&lnStart=1&colStart=2&lnEnd=1&colEnd=4"],
+        )
+        uncovered_branches = [item for item in result["branches"] if item["status"] == "uncovered"]
+        self.assertEqual(
+            [item["url"] for item in uncovered_branches],
+            [f"{base}?{encoded}&lnStart=1&colStart=1&lnEnd=1&colEnd=4"],
+        )
+        self.assertTrue(all("url" not in item for item in result["functions"]))
+        self.assertEqual(
+            [item["url"] for item in result["gate"]["lines"]],
+            [f"{base}?{encoded}&lnStart=1&colStart=1&lnEnd=2&colEnd=1"],
+        )
+
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            main(["HEAD", "--coverage", str(report), "--repo", str(self.repo), "--format", "json"])
+        self.assertNotIn("url", stdout.getvalue())
 
     def test_no_changes_and_binary_changes_have_no_lines(self):
         self.assertEqual(changed_lines(self.repo, ["HEAD"]), {})

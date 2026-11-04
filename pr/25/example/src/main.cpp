@@ -1,0 +1,16 @@
+// Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+// Licensed under the MIT License. See LICENSE for details.
+
+#include <iostream>
+#include "my_lib.hpp"
+
+void failingFunction() {
+    std::cout << "This function is not covered by tests\n";
+}
+
+int main() {
+    std::cout << "Hello World\n";
+    CoverageClass coverage;
+    coverage.functionCovered();
+    return 0;
+}

@@ -24,6 +24,11 @@ coverage-analytics diff "$BASE_SHA...HEAD" --coverage build/coverage_example_out
 coverage-analytics gate diff-coverage.json
 ```
 
+To make GitHub block merging when changed code is uncovered, require the
+**PR coverage gate** status check in a ruleset for the target branch. See the
+[changed-code coverage guide](docs/changed-code-coverage.md#require-the-pr-coverage-gate)
+for setup steps and a real pull request example.
+
 ## Documentation
 
 ### Getting started

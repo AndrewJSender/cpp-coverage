@@ -14,7 +14,7 @@ import subprocess
 from pathlib import Path
 
 from coverage_analytics.profile import profile_data, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR, CLANG_STR
-from coverage_analytics.website import copy_local_data, generate_website
+from coverage_analytics.archived.website import copy_local_data, generate_website
 
 
 logger = logging.getLogger(__name__)

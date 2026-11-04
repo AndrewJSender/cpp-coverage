@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import zipfile
 
-from coverage_analytics.artifactory import (
+from coverage_analytics.archived.artifactory import (
     download_zip,
     extract_zip,
     gen_aql,
@@ -43,7 +43,7 @@ class RequestAttemptTests(unittest.TestCase):
     def test_returns_parsed_json_on_success(self):
         payload = json.dumps({"results": [1, 2]}).encode("utf-8")
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             return_value=mock_urlopen_response(payload),
         ) as urlopen:
             result = request_attempt(MagicMock())
@@ -53,7 +53,7 @@ class RequestAttemptTests(unittest.TestCase):
     def test_retries_then_succeeds(self):
         payload = json.dumps({"results": []}).encode("utf-8")
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             side_effect=[OSError("boom"), mock_urlopen_response(payload)],
         ) as urlopen:
             result = request_attempt(MagicMock())
@@ -62,7 +62,7 @@ class RequestAttemptTests(unittest.TestCase):
 
     def test_returns_errors_after_exhausting_retries(self):
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             side_effect=OSError("boom"),
         ) as urlopen:
             result = request_attempt(MagicMock())
@@ -72,7 +72,7 @@ class RequestAttemptTests(unittest.TestCase):
     def test_does_not_disable_certificate_verification(self):
         payload = json.dumps({}).encode("utf-8")
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             return_value=mock_urlopen_response(payload),
         ) as urlopen:
             request_attempt(MagicMock())
@@ -83,7 +83,7 @@ class GetDirectoryContentsTests(unittest.TestCase):
     def test_returns_results_list(self):
         payload = json.dumps({"results": [{"name": "a.zip"}]}).encode("utf-8")
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             return_value=mock_urlopen_response(payload),
         ):
             results = get_directory_contents("key", "aql", "https://example.invalid")
@@ -91,7 +91,7 @@ class GetDirectoryContentsTests(unittest.TestCase):
 
     def test_returns_empty_on_errors(self):
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             side_effect=OSError("boom"),
         ):
             results = get_directory_contents("key", "aql", "https://example.invalid")
@@ -104,7 +104,7 @@ class DownloadZipTests(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         zip_dir = Path(directory.name)
         with patch(
-            "coverage_analytics.artifactory.urlopen",
+            "coverage_analytics.archived.artifactory.urlopen",
             return_value=mock_urlopen_response(b"zip-bytes"),
         ) as urlopen:
             result = asyncio.run(

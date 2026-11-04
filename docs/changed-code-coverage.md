@@ -127,9 +127,13 @@ The GitHub Actions workflow builds/tests the checked-out PR merge tree, compares
 `BASE_SHA...HEAD` against that same tree, and evaluates the JSON gate for
 `example/*.cpp` and `example/*.hpp`. It uploads the website and diff findings,
 emits file/line annotations, and adds a job summary where each failing line
-links to the Pages PR preview with the uncovered source highlighted. Configure
-the **MacOS Build,
-Run Tests, and Generate Coverage Data** check as required in repository branch
+links to the Pages PR preview with the uncovered source highlighted. Coverage
+generation and analysis do not fail on uncovered findings, so the preview can
+deploy before enforcement. The separate **PR coverage gate** job waits for all
+three platform jobs and Pages deployment, then downloads and enforces the JSON.
+Failed coverage generation or deployment fails this check explicitly. For fork
+PRs, Pages deployment is skipped; the gate still runs, without preview links.
+Configure the **PR coverage gate** check as required in repository branch
 protection/rulesets; workflow edits alone do not configure that administrative rule.
 Add platform/feature matrix jobs and combine their reports for conditionally
 compiled code. Do not reuse profiles from a previous build: generation merges

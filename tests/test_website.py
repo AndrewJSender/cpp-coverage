@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import unittest
 
-from coverage_analytics.website import (
+from coverage_analytics.archived.website import (
     copy_local_data,
     generate_website,
     update_file_manifest,

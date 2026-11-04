@@ -133,12 +133,32 @@ deploy before enforcement. The separate **PR coverage gate** job waits for all
 three platform jobs and Pages deployment, then downloads and enforces the JSON.
 Failed coverage generation or deployment fails this check explicitly. For fork
 PRs, Pages deployment is skipped; the gate still runs, without preview links.
-Configure the **PR coverage gate** check as required in repository branch
-protection/rulesets; workflow edits alone do not configure that administrative rule.
 Add platform/feature matrix jobs and combine their reports for conditionally
 compiled code. Do not reuse profiles from a previous build: generation merges
 all `coverage*.profraw` files in the output directory. Parallel tests use
 `coverage-%m-%p.profraw` to avoid overwriting each other's profiles.
+
+## Require the PR coverage gate
+
+The workflow creates a **PR coverage gate** check for pull requests. It fails
+when changed code is uncovered or coverage validation fails. To have GitHub
+block merging until the gate passes:
+
+1. Open the repository **Settings** and go to **Rules > Rulesets**.
+2. Open or create a ruleset that targets the branch you want to protect.
+3. Under **Require status checks to pass**, add **PR coverage gate** as a
+   required check, then save the ruleset.
+
+The check is the workflow job named **PR coverage gate**, not an individual
+step. A workflow change by itself does not make this check required; the
+ruleset must be updated.
+
+For example, [PR #25](https://github.com/AndrewJSender/cpp-coverage/pull/25)
+added a `failingFunction` without adding a test that covered it. The Linux,
+macOS, and Windows coverage jobs and Pages deployment succeeded, but
+**PR coverage gate** failed because the changed code was not covered. With the
+check required by the target branch's ruleset, GitHub prevents merging that PR
+until the coverage gap is addressed and the check passes.
 
 Run the Python regression tests with:
 

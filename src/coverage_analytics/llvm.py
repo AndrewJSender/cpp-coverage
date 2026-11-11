@@ -89,18 +89,26 @@ def demangle_function_names(
     itanium_functions = [function for function in functions if not uses_msvc_mangling(function)]
 
     if itanium_functions:
-        names = run_demangler(llvm_cxxfilt, [function["name"] for function in itanium_functions])
-        for function, name in zip(itanium_functions, names):
-            function["demangled_name"] = name
+        try:
+            names = run_demangler(llvm_cxxfilt, [function["name"] for function in itanium_functions])
+        except FileNotFoundError:
+            logger.warning("C++ demangler %s is unavailable; leaving function names unchanged", llvm_cxxfilt)
+        else:
+            for function, name in zip(itanium_functions, names):
+                function["demangled_name"] = name
 
     if msvc_functions:
-        names = run_demangler(
-            llvm_undname,
-            [function["name"] for function in msvc_functions],
-            echoes_input=True,
-        )
-        for function, name in zip(msvc_functions, names):
-            function["demangled_name"] = simplify_microsoft_name(name)
+        try:
+            names = run_demangler(
+                llvm_undname,
+                [function["name"] for function in msvc_functions],
+                echoes_input=True,
+            )
+        except FileNotFoundError:
+            logger.warning("MSVC demangler %s is unavailable; leaving function names unchanged", llvm_undname)
+        else:
+            for function, name in zip(msvc_functions, names):
+                function["demangled_name"] = simplify_microsoft_name(name)
 
     with open(details_json_path, "w", encoding="utf-8") as details_file:
         json.dump(details, details_file)

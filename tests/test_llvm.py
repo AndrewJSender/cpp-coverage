@@ -133,11 +133,37 @@ class DemangleFunctionNamesTests(unittest.TestCase):
                 demangle_function_names(self.details_path, "c++filt")
         self.assertEqual(json.loads(self.details_path.read_text(encoding="utf-8")), details)
 
-    def test_missing_executable_is_reported(self):
-        self.write_details({"data": [{"functions": [{"name": "main"}]}]})
+    def test_missing_executable_leaves_function_names_unchanged(self):
+        details = {"data": [{"functions": [{"name": "main"}]}]}
+        self.write_details(details)
         with patch("coverage_analytics.llvm.subprocess.run", side_effect=FileNotFoundError("c++filt")):
-            with self.assertRaises(FileNotFoundError):
-                demangle_function_names(self.details_path, "c++filt")
+            demangle_function_names(self.details_path, "c++filt")
+        self.assertEqual(json.loads(self.details_path.read_text(encoding="utf-8")), details)
+
+    def test_missing_msvc_demangler_leaves_symbols_unchanged(self):
+        details = {
+            "data": [
+                {
+                    "functions": [
+                        {"name": "?functionCovered@CoverageClass@@QEAAXXZ"},
+                        {"name": "main"},
+                    ]
+                }
+            ]
+        }
+        self.write_details(details)
+
+        def run_demanglers(command, **kwargs):
+            if command == ["llvm-undname"]:
+                raise FileNotFoundError("llvm-undname")
+            return subprocess.CompletedProcess(command, 0, stdout="main\n")
+
+        with patch("coverage_analytics.llvm.subprocess.run", side_effect=run_demanglers):
+            demangle_function_names(self.details_path, "llvm-cxxfilt", "llvm-undname")
+
+        updated = json.loads(self.details_path.read_text(encoding="utf-8"))
+        self.assertNotIn("demangled_name", updated["data"][0]["functions"][0])
+        self.assertEqual(updated["data"][0]["functions"][1]["demangled_name"], "main")
 
     def test_invalid_output_preserves_report(self):
         details = {"data": [{"functions": [{"name": "main"}]}]}

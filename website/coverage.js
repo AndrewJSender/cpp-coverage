@@ -5,10 +5,135 @@ const STATS_TYPE_ORDER = ["functions", "lines", "regions", "branches"];
 let function_report_state = { pending: 0, loaded: 0, errors: 0, functions: 0 };
 const source_report_state = { lines: null, reports: new Map(), pending: new Set(), errors: new Set() };
 let source_selection = null;
+let function_scope = null;
 
 function is_path_in_scope(path, file_path) {
     let directory = path.endsWith("/") ? path.slice(0, -1) : path;
     return path === "." || file_path === path || file_path.startsWith(`${directory}/`);
+}
+
+function split_function_scope(name) {
+    // Split a demangled name on "::" outside template/argument nesting, e.g.
+    // "CoverageClass::functionCovered()" -> ["CoverageClass", "functionCovered()"].
+    let parts = [];
+    let depth = 0;
+    let start = 0;
+    let index = 0;
+    while (index < name.length - 1) {
+        let character = name[index];
+        if ("<([{".includes(character)) {
+            depth += 1;
+        } else if (">)]}".includes(character)) {
+            depth = Math.max(depth - 1, 0);
+        } else if (depth === 0 && name.startsWith("::", index)) {
+            parts.push(name.slice(start, index));
+            index += 2;
+            start = index;
+            continue;
+        }
+        index += 1;
+    }
+    parts.push(name.slice(start));
+    let components = parts.filter(part => part !== "");
+    return components.length ? components : [name];
+}
+
+function function_scope_url(name) {
+    let url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    if (name !== null) {
+        url.searchParams.set("function", name);
+    }
+    return url.toString();
+}
+
+function is_function_in_scope(scope, function_name) {
+    return scope === null || function_name === scope || function_name.startsWith(`${scope}::`);
+}
+
+function resolve_function_scope(parts, functions_data) {
+    let node = functions_data["."] ?? {};
+    for (let index = 0; index < parts.length; index++) {
+        let part = parts[index];
+        if (part !== "functions" && part in node) {
+            node = node[part];
+        } else if (index === parts.length - 1 && part in (node["functions"] ?? {})) {
+            return { type: "function", name: node["functions"][part] };
+        } else {
+            return null;
+        }
+    }
+    return { type: "scope", node };
+}
+
+function append_scope_note(nav, text) {
+    let note = document.createElement("p");
+    note.className = "scope-note";
+    note.textContent = text;
+    nav.appendChild(note);
+}
+
+function render_function_scope_nav(functions_data) {
+    let nav = document.getElementById("function_scope_nav");
+    nav.hidden = false;
+    nav.replaceChildren();
+    if (!functions_data) {
+        append_scope_note(nav, "The function index (data/functions.json) could not be loaded.");
+        return;
+    }
+
+    let parts = function_scope === null ? [] : split_function_scope(function_scope);
+    let breadcrumb = document.createElement("p");
+    breadcrumb.className = "scope-breadcrumb";
+    let root_link = document.createElement("a");
+    root_link.href = function_scope_url(null);
+    root_link.textContent = "All functions";
+    breadcrumb.appendChild(root_link);
+    parts.forEach((part, index) => {
+        breadcrumb.appendChild(document.createTextNode(" :: "));
+        if (index === parts.length - 1) {
+            let current = document.createElement("strong");
+            current.textContent = part;
+            breadcrumb.appendChild(current);
+        } else {
+            let anchor = document.createElement("a");
+            anchor.href = function_scope_url(parts.slice(0, index + 1).join("::"));
+            anchor.textContent = part;
+            breadcrumb.appendChild(anchor);
+        }
+    });
+    nav.appendChild(breadcrumb);
+
+    let resolved = resolve_function_scope(parts, functions_data);
+    if (resolved === null) {
+        append_scope_note(nav, `"${function_scope}" was not found in the function index.`);
+        return;
+    }
+    if (resolved.type === "function") {
+        append_scope_note(nav, "Each row below shows this function in one coverage report.");
+        return;
+    }
+
+    let children = document.createElement("ul");
+    children.className = "scope-children";
+    let append_child_link = (label, target) => {
+        let item = document.createElement("li");
+        let anchor = document.createElement("a");
+        anchor.href = function_scope_url(target);
+        anchor.textContent = label;
+        item.appendChild(anchor);
+        children.appendChild(item);
+    };
+    for (let scope_name of Object.keys(resolved.node)) {
+        if (scope_name !== "functions") {
+            append_child_link(`${scope_name}::`, [...parts, scope_name].join("::"));
+        }
+    }
+    for (let function_name of Object.values(resolved.node["functions"] ?? {})) {
+        append_child_link(split_function_scope(function_name).at(-1), function_name);
+    }
+    nav.appendChild(children);
 }
 
 function append_platform_stats_row(stats_table, platform, file_platform_stats_covered, file_stats_count) {
@@ -494,8 +619,10 @@ function add_function_rows(path, platform, details_data) {
         }
 
         let is_covered = Number(covered_function["count"]) > 0;
+        let display_name = covered_function["demangled_name"] || covered_function["name"] || "(unnamed function)";
         let row = function_table_body.insertRow();
         row.dataset.coverage = is_covered ? "covered" : "uncovered";
+        row.dataset.fullName = display_name;
 
         let status_cell = row.insertCell();
         let status_badge = document.createElement("span");
@@ -504,13 +631,17 @@ function add_function_rows(path, platform, details_data) {
         status_cell.appendChild(status_badge);
 
         let function_name_cell = row.insertCell();
-        function_name_cell.textContent = covered_function["demangled_name"] || covered_function["name"] || "(unnamed function)";
+        let function_anchor = document.createElement("a");
+        function_anchor.href = function_scope_url(display_name);
+        function_anchor.textContent = display_name;
+        function_name_cell.appendChild(function_anchor);
         function_name_cell.title = covered_function["name"] || "";
         row.insertCell().textContent = filename;
         row.insertCell().textContent = covered_function["count"] ?? 0;
         row.insertCell().textContent = platform;
         function_report_state.functions += 1;
     }
+    apply_function_filters();
 }
 
 function complete_function_report() {
@@ -528,12 +659,21 @@ function complete_function_report() {
         return;
     }
 
-    let status_text = `${function_report_state.functions} function entr${function_report_state.functions === 1 ? "y" : "ies"} shown`;
+    apply_function_filters();
+}
+
+function update_function_report_status(visible_count) {
+    if (function_report_state.pending > 0 || function_report_state.functions === 0) {
+        return;
+    }
+    let plural = count => `function entr${count === 1 ? "y" : "ies"}`;
+    let status_text = visible_count === function_report_state.functions
+        ? `${function_report_state.functions} ${plural(function_report_state.functions)} shown`
+        : `${visible_count} of ${function_report_state.functions} ${plural(function_report_state.functions)} shown`;
     if (function_report_state.errors) {
         status_text += ` · function details unavailable for ${function_report_state.errors} report(s)`;
     }
-    status.textContent = status_text;
-    apply_function_filters();
+    document.getElementById("function_report_status").textContent = status_text;
 }
 
 function apply_function_filters() {
@@ -546,7 +686,8 @@ function apply_function_filters() {
         }
         let matches_coverage = coverage_filter == "all" || row.dataset.coverage == coverage_filter;
         let matches_search = row.textContent.toLowerCase().includes(search_term);
-        row.hidden = !matches_coverage || !matches_search;
+        let matches_scope = is_function_in_scope(function_scope, row.dataset.fullName || "");
+        row.hidden = !matches_coverage || !matches_search || !matches_scope;
         if (!row.hidden) {
             visible_count += 1;
         }
@@ -566,13 +707,23 @@ function apply_function_filters() {
     } else if (empty_row) {
         empty_row.hidden = true;
     }
+    update_function_report_status(visible_count);
 }
 
 
 function handle_manifest(path, manifest_data) {
-    fetch("data/files.json").then(response => response.json()).then(files_data => {
+    let files_promise = fetch("data/files.json").then(response => response.json());
+    let functions_promise = fetch("data/functions.json")
+        .then(response => response.ok ? response.json() : null)
+        .catch(error => {
+            console.error("Unable to load the function index:", error);
+            return null;
+        });
+    Promise.all([files_promise, functions_promise]).then(([files_data, functions_data]) => {
         console.debug("files_data: ", files_data);
+        console.debug("functions_data: ", functions_data);
         handle_files_data(path, manifest_data, files_data);
+        render_function_scope_nav(functions_data);
     });
 }
 
@@ -648,6 +799,14 @@ function init_summary_table(path, manifest, files_data) {
 
 function init_parent_anchor(path) {
     let parent_anchor = document.getElementById("parent_anchor");
+    if (function_scope !== null) {
+        let parent_scope = split_function_scope(function_scope).slice(0, -1).join("::");
+        parent_anchor.href = function_scope_url(parent_scope || null);
+        parent_anchor.textContent = parent_scope
+            ? `Go to parent scope .. (${parent_scope})`
+            : "Go to all functions";
+        return;
+    }
     let parent_path = path.split("/").slice(0, -1).join("/");
     if (parent_path) {
         parent_anchor.href = `?path=${parent_path}`;
@@ -682,17 +841,35 @@ function init_file_details_table_body(path, source_root) {
     });
 }
 
+function select_view_tab(view) {
+    let views = {
+        path: { tab: "path_tab", panels: ["path_panel", "file_details_div"] },
+        function: { tab: "function_tab", panels: ["function_panel"] },
+    };
+    for (let [name, elements] of Object.entries(views)) {
+        let selected = name === view;
+        document.getElementById(elements.tab).setAttribute("aria-selected", selected);
+        for (let panel of elements.panels) {
+            document.getElementById(panel).classList.toggle("view-hidden", !selected);
+        }
+    }
+}
+
 function on_load() {
     console.log("Initializing...");
 
     const urlParams = new URLSearchParams(window.location.search);
     const path = urlParams.has("path") ? urlParams.get("path") : ".";
+    function_scope = urlParams.get("function");
     source_selection = get_source_selection(urlParams);
     init_parent_anchor(path);
     document.getElementById("function_filter").addEventListener("change", apply_function_filters);
     document.getElementById("function_search").addEventListener("input", apply_function_filters);
     document.getElementById("source_report").addEventListener("change", render_source_coverage);
     document.addEventListener("selectionchange", update_source_selection_url);
+    document.getElementById("path_tab").addEventListener("click", () => select_view_tab("path"));
+    document.getElementById("function_tab").addEventListener("click", () => select_view_tab("function"));
+    select_view_tab(function_scope !== null ? "function" : "path");
 
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);

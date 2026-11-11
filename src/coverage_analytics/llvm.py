@@ -25,7 +25,50 @@ def run_subprocess(cmd_parts, out_path):
         subprocess.run(cmd_parts, stdout=outfile, check=True)
 
 
-def demangle_function_names(details_json_path: Path, llvm_cxxfilt: str) -> None:
+MSVC_SIGNATURE_PREFIXES = ("public: ", "protected: ", "private: ", "static ", "virtual ")
+MSVC_CALLING_CONVENTIONS = re.compile(
+    r"\b(?:__cdecl|__stdcall|__thiscall|__fastcall|__vectorcall|__clrcall)\s+"
+)
+
+
+def simplify_microsoft_name(demangled: str) -> str:
+    """Reduce an MSVC-style signature to the Itanium-style qualified name.
+
+    For example, ``public: void __cdecl CoverageClass::functionCovered(void)``
+    becomes ``CoverageClass::functionCovered()``.
+    """
+    name = demangled
+    while name.startswith(MSVC_SIGNATURE_PREFIXES):
+        for prefix in MSVC_SIGNATURE_PREFIXES:
+            name = name.removeprefix(prefix)
+    # The return type precedes the outermost calling convention.
+    match = MSVC_CALLING_CONVENTIONS.search(name)
+    if match:
+        name = name[match.end():]
+    return name.replace("(void)", "()")
+
+
+def run_demangler(demangler: str, names: list[str], echoes_input: bool = False) -> list[str]:
+    result = subprocess.run(
+        [demangler],
+        input="".join(f"{name}\n" for name in names),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+    )
+    lines = result.stdout.splitlines()
+    # llvm-undname echoes each redirected input line before its demangled name.
+    if echoes_input and len(lines) == 2 * len(names) and lines[::2] == names:
+        lines = lines[1::2]
+    if len(lines) != len(names) or any(not line for line in lines):
+        raise ValueError("C++ demangler returned an unexpected number of function names or an empty name")
+    return lines
+
+
+def demangle_function_names(
+    details_json_path: Path, llvm_cxxfilt: str, llvm_undname: str | None = None
+) -> None:
     with open(details_json_path, encoding="utf-8") as details_file:
         details = json.load(details_file)
 
@@ -37,20 +80,27 @@ def demangle_function_names(details_json_path: Path, llvm_cxxfilt: str) -> None:
     if not functions:
         return
 
-    result = subprocess.run(
-        [llvm_cxxfilt],
-        input="".join(f"{function['name']}\n" for function in functions),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=True,
-    )
-    names = result.stdout.splitlines()
-    if len(names) != len(functions) or any(not name for name in names):
-        raise ValueError("C++ demangler returned an unexpected number of function names or an empty name")
+    # llvm-cxxfilt only reads Itanium symbols from stdin, so MSVC-mangled
+    # names (leading "?") go through llvm-undname when it is available.
+    def uses_msvc_mangling(function) -> bool:
+        return llvm_undname is not None and function["name"].startswith("?")
 
-    for function, name in zip(functions, names):
-        function["demangled_name"] = name
+    msvc_functions = [function for function in functions if uses_msvc_mangling(function)]
+    itanium_functions = [function for function in functions if not uses_msvc_mangling(function)]
+
+    if itanium_functions:
+        names = run_demangler(llvm_cxxfilt, [function["name"] for function in itanium_functions])
+        for function, name in zip(itanium_functions, names):
+            function["demangled_name"] = name
+
+    if msvc_functions:
+        names = run_demangler(
+            llvm_undname,
+            [function["name"] for function in msvc_functions],
+            echoes_input=True,
+        )
+        for function, name in zip(msvc_functions, names):
+            function["demangled_name"] = simplify_microsoft_name(name)
 
     with open(details_json_path, "w", encoding="utf-8") as details_file:
         json.dump(details, details_file)
@@ -76,6 +126,7 @@ async def profile_llvm_data(
     if not profiles:
         raise FileNotFoundError(f"No raw coverage profiles found in {test_output_path}")
 
+    llvm_undname = None
     if platform in ["macos", "ios"]:
         llvm_profdata = await ctx.eval_async("$(xcode_tool llvm-profdata)")
         llvm_cov = await ctx.eval_async("$(xcode_tool llvm-cov)")
@@ -85,6 +136,7 @@ async def profile_llvm_data(
         llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata.exe")
         llvm_cov = await ctx.eval_async(f"{llvm_bin_path}/llvm-cov.exe")
         llvm_cxxfilt = await ctx.eval_async(f"{llvm_bin_path}/llvm-cxxfilt.exe")
+        llvm_undname = await ctx.eval_async(f"{llvm_bin_path}/llvm-undname.exe")
     elif platform in ["linux"]:
         llvm_bin_path = await ctx.eval_async("$(which llvm-profdata)")
         llvm_profdata = await ctx.eval_async(f"{llvm_bin_path}/llvm-profdata")
@@ -114,7 +166,7 @@ async def profile_llvm_data(
     details_json_path = Path(f"{test_output_path}", "coverage_details.json")
     details_cmd = [llvm_cov, "export", "--format=text"] + llvm_cov_common_args
     run_subprocess(details_cmd, details_json_path)
-    demangle_function_names(details_json_path, llvm_cxxfilt)
+    demangle_function_names(details_json_path, llvm_cxxfilt, llvm_undname)
 
     lcov_path = Path(f"{test_output_path}", "coverage.lcov")
     if gen_lcov or gen_lcov_to_cobertura:

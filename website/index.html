@@ -69,7 +69,16 @@
         </article>
       </section>
 
-      <section class="panel" aria-labelledby="summary-title">
+      <div class="view-tabs" role="tablist" aria-label="Coverage views">
+        <button type="button" id="path_tab" role="tab" aria-selected="true" aria-controls="path_panel">
+          Coverage by path
+        </button>
+        <button type="button" id="function_tab" role="tab" aria-selected="false" aria-controls="function_panel">
+          Coverage by function
+        </button>
+      </div>
+
+      <section id="path_panel" class="panel" role="tabpanel" aria-labelledby="summary-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">REPORT DETAILS</p>
@@ -93,11 +102,11 @@
         </div>
       </section>
 
-      <section class="panel function-panel" aria-labelledby="functions-title">
+      <section id="function_panel" class="panel function-panel" role="tabpanel" aria-labelledby="functions-title">
         <div class="section-heading">
           <div>
             <p class="eyebrow">FUNCTION INVENTORY</p>
-            <h2 id="functions-title">Covered and uncovered functions</h2>
+            <h2 id="functions-title">Coverage by function</h2>
           </div>
           <div class="function-controls">
             <label class="visually-hidden" for="function_filter">Filter functions by coverage</label>
@@ -110,6 +119,7 @@
             <input id="function_search" type="search" placeholder="Search functions" />
           </div>
         </div>
+        <nav id="function_scope_nav" class="function-scope-nav" aria-label="Browse functions by scope" hidden></nav>
         <p id="function_report_status" class="function-status" role="status" aria-live="polite">
           Loading function details…
         </p>

@@ -7,9 +7,24 @@ View the [example coverage](https://andrewjsender.github.io/cpp-coverage/?path=.
 or the [source coverage for my_lib.cpp](https://andrewjsender.github.io/cpp-coverage/?path=./example/src/my_lib.cpp).
 
 The report includes summary cards for line, function, region, and branch coverage.
+The "Coverage by path" and "Coverage by function" sections are switchable tabs.
 Use the path table to browse into folders and files; file views also show source
 lines with execution counts. The function inventory lists covered and uncovered
 functions and can be filtered by status or searched by function name and file.
+
+Functions can also be explored by namespace or class hierarchy with the `function`
+query parameter, mirroring path browsing; a `function` URL opens the
+"Coverage by function" tab. The scope breadcrumb and chips in the
+function inventory drill from the root scopes (for example `?function=CoverageClass`)
+down to a single function (for example
+`?function=CoverageClass::functionCovered()`), where each table row shows that
+function's call count in one coverage report. Function names in the inventory
+link to their function view. The hierarchy is served from
+`website/data/functions.json`, which mirrors the `files.json` structure: nested
+scope objects with `functions` leaves that map a function's unqualified name to
+its fully qualified name. It is aggregated from the `coverage_details.json` of
+every report listed in `manifest.json`.
+
 Source ranges can be highlighted with the `lnStart`, `colStart`, `lnEnd`, and
 `colEnd` query parameters when viewing a file, for example
 `?path=./example/src/my_lib.cpp&lnStart=5&colStart=1&lnEnd=6&colEnd=12`.
@@ -27,9 +42,12 @@ Function-level details are shown when the selected coverage report provides them
 (including LLVM reports); other formats may not export this information.
 LLVM report generation uses the platform's `c++filt` or `llvm-cxxfilt` executable
 to add readable C++ function names to `coverage_details.json`, preserving the
-original symbols. The website displays the readable names when available, with
-the original symbol in a tooltip. Regenerate existing reports to populate these
-names.
+original symbols. On Windows, MSVC-mangled symbols (leading `?`) are demangled
+with `llvm-undname` instead and simplified to Itanium-style names, so
+`?functionCovered@CoverageClass@@QEAAXXZ` is shown as
+`CoverageClass::functionCovered()`. The website displays the readable names when
+available, with the original symbol in a tooltip. Regenerate existing reports to
+populate these names.
 
 ### Run Website Locally
 

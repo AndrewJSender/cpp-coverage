@@ -29,12 +29,40 @@ def update_file_manifest(files_manifest: dict, root_path: Path, parent_path, fil
     subfolder["files"].update({file_relative_path.name: file_path_str})
 
 
+def function_declarator(name: str) -> str:
+    """Remove a function's return type while retaining its qualified signature."""
+    template_depth = 0
+    declarator_end = len(name)
+    for index, character in enumerate(name):
+        if character == "<":
+            template_depth += 1
+        elif character == ">":
+            template_depth = max(template_depth - 1, 0)
+        elif character == "(" and template_depth == 0:
+            declarator_end = index
+            break
+
+    declarator = name[:declarator_end]
+    template_depth = 0
+    candidate = None
+    for index, character in enumerate(declarator):
+        if character == "<":
+            template_depth += 1
+        elif character == ">":
+            template_depth = max(template_depth - 1, 0)
+        elif character.isspace() and template_depth == 0:
+            if not declarator[:index].rstrip().endswith("operator"):
+                candidate = declarator[index + 1:].lstrip()
+    return candidate + name[declarator_end:] if candidate is not None else name
+
+
 def split_function_scope(name: str) -> list[str]:
     """Split a demangled function name on ``::`` outside template/argument nesting.
 
     For example, ``CoverageClass::functionCovered()`` becomes
     ``["CoverageClass", "functionCovered()"]``.
     """
+    name = function_declarator(name)
     parts = []
     depth = 0
     start = 0
@@ -60,18 +88,15 @@ def update_function_manifest(functions_manifest: dict, function_name: str):
     parts = split_function_scope(function_name)
     scope = functions_manifest["."]
     for part in parts[:-1]:
-        if part not in scope:
-            scope[part] = {"functions": {}}
-        scope = scope[part]
-    scope.setdefault("functions", {})[parts[-1]] = function_name
+        scope = scope["scopes"].setdefault(part, {"functions": {}, "scopes": {}})
+    scope["functions"][parts[-1]] = function_name
 
 
 async def generate_function_manifest(website_data_path: Path | None = None):
     """Write functions.json from the coverage_details.json of each manifest report."""
     website_data_path = website_data_path or default_website_data_path()
     functions_manifest = {
-        ".": {"functions": {}},
-        "functions": {},
+        ".": {"functions": {}, "scopes": {}},
     }
 
     manifest_json_path = website_data_path / "manifest.json"

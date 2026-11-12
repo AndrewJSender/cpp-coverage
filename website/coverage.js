@@ -12,9 +12,44 @@ function is_path_in_scope(path, file_path) {
     return path === "." || file_path === path || file_path.startsWith(`${directory}/`);
 }
 
+function function_declarator(name) {
+    let template_depth = 0;
+    let declarator_end = name.length;
+    for (let index = 0; index < name.length; index++) {
+        let character = name[index];
+        if (character === "<") {
+            template_depth += 1;
+        } else if (character === ">") {
+            template_depth = Math.max(template_depth - 1, 0);
+        } else if (character === "(" && template_depth === 0) {
+            declarator_end = index;
+            break;
+        }
+    }
+
+    let declarator = name.slice(0, declarator_end);
+    template_depth = 0;
+    let candidate = null;
+    for (let index = 0; index < declarator.length; index++) {
+        let character = declarator[index];
+        if (character === "<") {
+            template_depth += 1;
+        } else if (character === ">") {
+            template_depth = Math.max(template_depth - 1, 0);
+        } else if (/\s/.test(character) && template_depth === 0) {
+            let prefix = declarator.slice(0, index).trimEnd();
+            if (!prefix.endsWith("operator")) {
+                candidate = declarator.slice(index + 1).trimStart();
+            }
+        }
+    }
+    return candidate === null ? name : candidate + name.slice(declarator_end);
+}
+
 function split_function_scope(name) {
     // Split a demangled name on "::" outside template/argument nesting, e.g.
     // "CoverageClass::functionCovered()" -> ["CoverageClass", "functionCovered()"].
+    name = function_declarator(name);
     let parts = [];
     let depth = 0;
     let start = 0;
@@ -42,6 +77,7 @@ function function_scope_url(name) {
     let url = new URL(window.location.href);
     url.search = "";
     url.hash = "";
+    url.searchParams.set("view", "function");
     if (name !== null) {
         url.searchParams.set("function", name);
     }
@@ -49,15 +85,16 @@ function function_scope_url(name) {
 }
 
 function is_function_in_scope(scope, function_name) {
-    return scope === null || function_name === scope || function_name.startsWith(`${scope}::`);
+    let qualified_name = function_declarator(function_name);
+    return scope === null || qualified_name === scope || qualified_name.startsWith(`${scope}::`);
 }
 
 function resolve_function_scope(parts, functions_data) {
     let node = functions_data["."] ?? {};
     for (let index = 0; index < parts.length; index++) {
         let part = parts[index];
-        if (part !== "functions" && part in node) {
-            node = node[part];
+        if (part in (node["scopes"] ?? {})) {
+            node = node["scopes"][part];
         } else if (index === parts.length - 1 && part in (node["functions"] ?? {})) {
             return { type: "function", name: node["functions"][part] };
         } else {
@@ -125,10 +162,8 @@ function render_function_scope_nav(functions_data) {
         item.appendChild(anchor);
         children.appendChild(item);
     };
-    for (let scope_name of Object.keys(resolved.node)) {
-        if (scope_name !== "functions") {
-            append_child_link(`${scope_name}::`, [...parts, scope_name].join("::"));
-        }
+    for (let scope_name of Object.keys(resolved.node["scopes"] ?? {})) {
+        append_child_link(`${scope_name}::`, [...parts, scope_name].join("::"));
     }
     for (let function_name of Object.values(resolved.node["functions"] ?? {})) {
         append_child_link(split_function_scope(function_name).at(-1), function_name);
@@ -848,7 +883,9 @@ function select_view_tab(view) {
     };
     for (let [name, elements] of Object.entries(views)) {
         let selected = name === view;
-        document.getElementById(elements.tab).setAttribute("aria-selected", selected);
+        let tab = document.getElementById(elements.tab);
+        tab.setAttribute("aria-selected", selected);
+        tab.tabIndex = selected ? 0 : -1;
         for (let panel of elements.panels) {
             document.getElementById(panel).classList.toggle("view-hidden", !selected);
         }
@@ -867,9 +904,33 @@ function on_load() {
     document.getElementById("function_search").addEventListener("input", apply_function_filters);
     document.getElementById("source_report").addEventListener("change", render_source_coverage);
     document.addEventListener("selectionchange", update_source_selection_url);
-    document.getElementById("path_tab").addEventListener("click", () => select_view_tab("path"));
-    document.getElementById("function_tab").addEventListener("click", () => select_view_tab("function"));
-    select_view_tab(function_scope !== null ? "function" : "path");
+    const view_tabs = ["path_tab", "function_tab"].map(id => document.getElementById(id));
+    view_tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => select_view_tab(index === 0 ? "path" : "function"));
+        tab.addEventListener("keydown", event => {
+            let next_index;
+            if (event.key === "ArrowRight") {
+                next_index = (index + 1) % view_tabs.length;
+            } else if (event.key === "ArrowLeft") {
+                next_index = (index + view_tabs.length - 1) % view_tabs.length;
+            } else if (event.key === "Home") {
+                next_index = 0;
+            } else if (event.key === "End") {
+                next_index = view_tabs.length - 1;
+            } else {
+                return;
+            }
+            event.preventDefault();
+            view_tabs[next_index].focus();
+            view_tabs[next_index].click();
+        });
+    });
+    const requested_view = urlParams.get("view");
+    select_view_tab(
+        requested_view === "function" || (requested_view !== "path" && function_scope !== null)
+            ? "function"
+            : "path"
+    );
 
     fetch("data/manifest.json").then(response => response.json()).then(manifest_data => {
         console.debug("Manifest: ", manifest_data);

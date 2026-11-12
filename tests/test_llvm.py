@@ -83,6 +83,7 @@ class DemangleFunctionNamesTests(unittest.TestCase):
                     command,
                     0,
                     stdout="?functionCovered@CoverageClass@@QEAAXXZ\n"
+                    "\n"
                     "public: void __cdecl CoverageClass::functionCovered(void)\n",
                 )
             self.assertEqual(command, ["llvm-cxxfilt"])

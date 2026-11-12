@@ -10,6 +10,7 @@ import unittest
 
 from coverage_analytics.archived.website import (
     copy_local_data,
+    function_declarator,
     generate_function_manifest,
     generate_website,
     split_function_scope,
@@ -88,10 +89,21 @@ class SplitFunctionScopeTests(unittest.TestCase):
             ["(anonymous namespace)", "helper()"],
         )
 
+    def test_strips_return_types_from_function_scopes(self):
+        self.assertEqual(function_declarator("void ns::helper<int>()"), "ns::helper<int>()")
+        self.assertEqual(
+            function_declarator("unsigned long ns::helper<int>()"),
+            "ns::helper<int>()",
+        )
+        self.assertEqual(
+            split_function_scope("void ns::helper<int>()"),
+            ["ns", "helper<int>()"],
+        )
+
 
 class UpdateFunctionManifestTests(unittest.TestCase):
     def test_nests_functions_by_scope(self):
-        manifest = {".": {"functions": {}}, "functions": {}}
+        manifest = {".": {"functions": {}, "scopes": {}}}
         update_function_manifest(manifest, "CoverageClass::functionCovered()")
         update_function_manifest(manifest, "CoverageClass::functionNotCovered()")
         update_function_manifest(manifest, "main")
@@ -99,12 +111,41 @@ class UpdateFunctionManifestTests(unittest.TestCase):
             manifest["."],
             {
                 "functions": {"main": "main"},
-                "CoverageClass": {
-                    "functions": {
-                        "functionCovered()": "CoverageClass::functionCovered()",
-                        "functionNotCovered()": "CoverageClass::functionNotCovered()",
+                "scopes": {
+                    "CoverageClass": {
+                        "functions": {
+                            "functionCovered()": "CoverageClass::functionCovered()",
+                            "functionNotCovered()": "CoverageClass::functionNotCovered()",
+                        },
+                        "scopes": {},
                     }
                 },
+            },
+        )
+
+    def test_scope_named_functions_does_not_collide_with_function_leaves(self):
+        manifest = {".": {"functions": {}, "scopes": {}}}
+        update_function_manifest(manifest, "functions::helper()")
+        self.assertEqual(
+            manifest["."],
+            {
+                "functions": {},
+                "scopes": {
+                    "functions": {
+                        "functions": {"helper()": "functions::helper()"},
+                        "scopes": {},
+                    }
+                },
+            },
+        )
+
+    def test_return_type_is_preserved_in_function_index_value(self):
+        manifest = {".": {"functions": {}, "scopes": {}}}
+        update_function_manifest(manifest, "void ns::helper<int>()")
+        self.assertEqual(
+            manifest["."]["scopes"]["ns"]["functions"],
+            {
+                "helper<int>()": "void ns::helper<int>()",
             },
         )
 
@@ -156,11 +197,14 @@ class GenerateFunctionManifestTests(unittest.TestCase):
             manifest["."],
             {
                 "functions": {"main": "main"},
-                "CoverageClass": {
-                    "functions": {
-                        "functionCovered()": "CoverageClass::functionCovered()"
-                    }
-                },
+                "scopes": {
+                    "CoverageClass": {
+                        "functions": {
+                            "functionCovered()": "CoverageClass::functionCovered()"
+                        },
+                        "scopes": {},
+                    },
+                }
             },
         )
 
@@ -172,7 +216,7 @@ class GenerateFunctionManifestTests(unittest.TestCase):
         asyncio.run(generate_function_manifest(website_data))
 
         manifest = json.loads((website_data / "functions.json").read_text())
-        self.assertEqual(manifest["."], {"functions": {}})
+        self.assertEqual(manifest["."], {"functions": {}, "scopes": {}})
 
 
 class CopyLocalDataTests(unittest.TestCase):

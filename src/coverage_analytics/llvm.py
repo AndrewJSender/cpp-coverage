@@ -59,8 +59,10 @@ def run_demangler(demangler: str, names: list[str], echoes_input: bool = False) 
     )
     lines = result.stdout.splitlines()
     # llvm-undname echoes each redirected input line before its demangled name.
-    if echoes_input and len(lines) == 2 * len(names) and lines[::2] == names:
-        lines = lines[1::2]
+    if echoes_input:
+        lines = [line for line in lines if line.strip()]
+        if len(lines) == 2 * len(names) and lines[::2] == names:
+            lines = lines[1::2]
     if len(lines) != len(names) or any(not line for line in lines):
         raise ValueError("C++ demangler returned an unexpected number of function names or an empty name")
     return lines

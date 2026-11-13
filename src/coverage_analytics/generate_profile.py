@@ -14,7 +14,11 @@ import subprocess
 from pathlib import Path
 
 from coverage_analytics.profile import profile_data, OPEN_CPP_COVERAGE_STR, BULLSEYE_STR, CLANG_STR
-from coverage_analytics.archived.website import copy_local_data, generate_website
+from coverage_analytics.archived.website import (
+    copy_local_data,
+    generate_function_manifest,
+    generate_website,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -142,6 +146,7 @@ async def generate(args: argparse.Namespace) -> None:
         website_data_path,
     )
     await copy_local_data(context, website_data_path)
+    await generate_function_manifest(website_data_path)
 
     logger.info("Coverage reports written to %s", output_directory)
     logger.info("Website data written to %s", website_data_path)

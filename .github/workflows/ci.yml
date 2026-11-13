@@ -185,6 +185,9 @@ jobs:
           done
           jq -s 'add' coverage-data/coverage-data-*/manifest.json \
             > coverage-website/data/manifest.json
+          jq -s 'reduce .[] as $index ({}; . * $index)' \
+            coverage-data/coverage-data-*/functions.json \
+            > coverage-website/data/functions.json
 
       - name: Include example sources in coverage website
         run: |

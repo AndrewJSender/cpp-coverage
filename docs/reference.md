@@ -32,6 +32,10 @@ The LLVM workflow generates:
 - `coverage.lcov` and `coverage.xml`: interchange exports.
 - `coverage_html/`: LLVM's HTML report.
 
+The website data directory additionally receives `files.json` (source file tree),
+`functions.json` (function scope tree aggregated from every report's
+`coverage_details.json`), and `manifest.json` (the list of coverage reports).
+
 Bullseye and OpenCppCoverage report formats are TBD.
 The website's data layout and local viewing instructions are in
 [Coverage Website](./coverage-website.md).

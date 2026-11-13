@@ -10,8 +10,12 @@ import unittest
 
 from coverage_analytics.archived.website import (
     copy_local_data,
+    function_declarator,
+    generate_function_manifest,
     generate_website,
+    split_function_scope,
     update_file_manifest,
+    update_function_manifest,
 )
 
 
@@ -57,6 +61,162 @@ class GenerateWebsiteTests(unittest.TestCase):
             manifest["."]["example"]["src"]["files"],
             {"main.cpp": "./example/src/main.cpp"},
         )
+
+
+class SplitFunctionScopeTests(unittest.TestCase):
+    def test_splits_on_scope_separators(self):
+        self.assertEqual(
+            split_function_scope("CoverageClass::functionCovered()"),
+            ["CoverageClass", "functionCovered()"],
+        )
+        self.assertEqual(split_function_scope("main"), ["main"])
+        self.assertEqual(
+            split_function_scope("outer::inner::call()"),
+            ["outer", "inner", "call()"],
+        )
+
+    def test_ignores_separators_inside_nesting(self):
+        self.assertEqual(
+            split_function_scope("std::vector<std::pair<int, int>>::size()"),
+            ["std", "vector<std::pair<int, int>>", "size()"],
+        )
+        self.assertEqual(
+            split_function_scope("ns::compare(std::pair<int, int> const&)"),
+            ["ns", "compare(std::pair<int, int> const&)"],
+        )
+        self.assertEqual(
+            split_function_scope("(anonymous namespace)::helper()"),
+            ["(anonymous namespace)", "helper()"],
+        )
+
+    def test_strips_return_types_from_function_scopes(self):
+        self.assertEqual(function_declarator("void ns::helper<int>()"), "ns::helper<int>()")
+        self.assertEqual(
+            function_declarator("unsigned long ns::helper<int>()"),
+            "ns::helper<int>()",
+        )
+        self.assertEqual(
+            split_function_scope("void ns::helper<int>()"),
+            ["ns", "helper<int>()"],
+        )
+
+
+class UpdateFunctionManifestTests(unittest.TestCase):
+    def test_nests_functions_by_scope(self):
+        manifest = {".": {"functions": {}, "scopes": {}}}
+        update_function_manifest(manifest, "CoverageClass::functionCovered()")
+        update_function_manifest(manifest, "CoverageClass::functionNotCovered()")
+        update_function_manifest(manifest, "main")
+        self.assertEqual(
+            manifest["."],
+            {
+                "functions": {"main": "main"},
+                "scopes": {
+                    "CoverageClass": {
+                        "functions": {
+                            "functionCovered()": "CoverageClass::functionCovered()",
+                            "functionNotCovered()": "CoverageClass::functionNotCovered()",
+                        },
+                        "scopes": {},
+                    }
+                },
+            },
+        )
+
+    def test_scope_named_functions_does_not_collide_with_function_leaves(self):
+        manifest = {".": {"functions": {}, "scopes": {}}}
+        update_function_manifest(manifest, "functions::helper()")
+        self.assertEqual(
+            manifest["."],
+            {
+                "functions": {},
+                "scopes": {
+                    "functions": {
+                        "functions": {"helper()": "functions::helper()"},
+                        "scopes": {},
+                    }
+                },
+            },
+        )
+
+    def test_return_type_is_preserved_in_function_index_value(self):
+        manifest = {".": {"functions": {}, "scopes": {}}}
+        update_function_manifest(manifest, "void ns::helper<int>()")
+        self.assertEqual(
+            manifest["."]["scopes"]["ns"]["functions"],
+            {
+                "helper<int>()": "void ns::helper<int>()",
+            },
+        )
+
+
+class GenerateFunctionManifestTests(unittest.TestCase):
+    def test_writes_functions_json_from_manifest_reports(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        website_data = Path(directory.name) / "website" / "data"
+        report_dir = website_data / "local" / "coverage_example_output"
+        report_dir.mkdir(parents=True)
+        (website_data / "manifest.json").write_text(
+            json.dumps(
+                {
+                    "coverage_example_output": {
+                        "path": "data/local/coverage_example_output",
+                        "coverage_file": "coverage_summary.json",
+                    },
+                    "missing_report": {
+                        "path": "data/local/missing_report",
+                        "coverage_file": "coverage_summary.json",
+                    },
+                }
+            )
+        )
+        (report_dir / "coverage_details.json").write_text(
+            json.dumps(
+                {
+                    "data": [
+                        {
+                            "functions": [
+                                {
+                                    "name": "_ZN13CoverageClass15functionCoveredEv",
+                                    "demangled_name": "CoverageClass::functionCovered()",
+                                    "count": 1,
+                                },
+                                {"name": "main", "demangled_name": "main", "count": 1},
+                            ]
+                        }
+                    ]
+                }
+            )
+        )
+
+        asyncio.run(generate_function_manifest(website_data))
+
+        manifest = json.loads((website_data / "functions.json").read_text())
+        self.assertEqual(
+            manifest["."],
+            {
+                "functions": {"main": "main"},
+                "scopes": {
+                    "CoverageClass": {
+                        "functions": {
+                            "functionCovered()": "CoverageClass::functionCovered()"
+                        },
+                        "scopes": {},
+                    },
+                }
+            },
+        )
+
+    def test_writes_empty_manifest_without_reports(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        website_data = Path(directory.name) / "website" / "data"
+
+        asyncio.run(generate_function_manifest(website_data))
+
+        manifest = json.loads((website_data / "functions.json").read_text())
+        self.assertEqual(manifest["."], {"functions": {}, "scopes": {}})
 
 
 class CopyLocalDataTests(unittest.TestCase):

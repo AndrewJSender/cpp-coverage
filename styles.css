@@ -271,6 +271,39 @@ h2 {
     margin-bottom: 24px;
 }
 
+.view-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.view-tabs [role="tab"] {
+    padding: 9px 16px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.view-tabs [role="tab"]:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.view-tabs [role="tab"][aria-selected="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.view-hidden {
+    display: none;
+}
+
 .section-heading {
     min-height: 84px;
     align-items: center;
@@ -309,6 +342,51 @@ h2 {
     padding: 0 22px 14px;
     color: var(--text-muted);
     font-size: 12px;
+}
+
+.function-scope-nav {
+    padding: 0 22px 14px;
+    font-size: 12px;
+}
+
+.scope-breadcrumb {
+    margin: 0 0 10px;
+    color: var(--text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.scope-note {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.scope-children {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.scope-children a {
+    display: inline-block;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.scope-children a:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    text-decoration: none;
 }
 
 .visually-hidden {

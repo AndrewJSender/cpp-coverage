@@ -1,0 +1,18 @@
+{
+  ".": {
+    "functions": {
+      "main": "main",
+      "?functionCovered@CoverageClass@@QEAAXXZ": "?functionCovered@CoverageClass@@QEAAXXZ",
+      "?functionNotCovered@CoverageClass@@QEAAXXZ": "?functionNotCovered@CoverageClass@@QEAAXXZ"
+    },
+    "scopes": {
+      "CoverageClass": {
+        "functions": {
+          "functionCovered()": "CoverageClass::functionCovered()",
+          "functionNotCovered()": "CoverageClass::functionNotCovered()"
+        },
+        "scopes": {}
+      }
+    }
+  }
+}

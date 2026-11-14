@@ -13,9 +13,49 @@ permissions:
   pull-requests: read
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    name: Linux Build, Run Tests, and Generate Coverage Data
+  platform:
+    name: ${{ matrix.os_name }} Build, Run Tests, and Generate Coverage Data
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            os_name: Linux
+            runner: ubuntu-latest
+            python: python3
+            generator: Unix Makefiles
+            configure_args: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+            build_args: ''
+            build_target: generate_profile_data
+            upload_coverage: true
+          - platform: windows
+            os_name: Windows
+            runner: windows-latest
+            python: python
+            generator: Ninja
+            configure_args: -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++
+            build_args: ''
+            build_target: generate_profile_data
+            upload_coverage: true
+          - platform: macos
+            os_name: MacOS
+            runner: macos-latest
+            python: python3
+            generator: Xcode
+            configure_args: ''
+            build_args: --config Debug
+            build_target: generate_profile_data
+            upload_coverage: true
+          - platform: ios
+            os_name: iOS Simulator
+            runner: macos-latest
+            python: python3
+            generator: Xcode
+            configure_args: -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_ARCHITECTURES=arm64
+            build_args: --config Debug
+            build_target: coverage_example
+            upload_coverage: false
     steps:
       - name: Check out repository
         uses: actions/checkout@main
@@ -28,104 +68,36 @@ jobs:
           python-version: '3.12'
 
       - name: Install LLVM tools
+        if: matrix.platform == 'linux'
         run: sudo apt-get update && sudo apt-get install -y llvm clang
 
       - name: Install coverage-analytics
-        run: python3 -m pip install -e .
+        run: ${{ matrix.python }} -m pip install -e .
 
       - name: Run Python regression tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-
-      - name: Generate Project
-        run: |
-          cmake -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
-            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ \
-            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_linux
-
-      - name: Build, Run Tests, and Generate Coverage
-        run: cmake --build build --target generate_profile_data
-
-      - name: Upload coverage website data
-        uses: actions/upload-artifact@main
-        with:
-          name: coverage-data-linux
-          path: website/data
-          if-no-files-found: error
-
-  windows:
-    runs-on: windows-latest
-    name: Windows Build, Run Tests, and Generate Coverage Data
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@main
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@main
-        with:
-          python-version: '3.12'
-
-      - name: Install coverage-analytics
-        run: python -m pip install -e .
-
-      - name: Run Python regression tests
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+        run: ${{ matrix.python }} -m unittest discover -s tests -p 'test_*.py' -v
 
       - name: Generate Project
         shell: bash
         run: |
-          cmake -G Ninja -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
-            -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ \
-            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_windows
+          cmake -G "${{ matrix.generator }}" -S example -B build \
+            -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+            ${{ matrix.configure_args }} \
+            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_${{ matrix.platform }}
 
       - name: Build, Run Tests, and Generate Coverage
-        run: cmake --build build --target generate_profile_data
+        run: cmake --build build ${{ matrix.build_args }} --target ${{ matrix.build_target }}
 
       - name: Upload coverage website data
+        if: matrix.upload_coverage
         uses: actions/upload-artifact@main
         with:
-          name: coverage-data-windows
-          path: website/data
-          if-no-files-found: error
-
-  macos:
-    runs-on: macos-latest
-    name: MacOS Build, Run Tests, and Generate Coverage Data
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@main
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@main
-        with:
-          python-version: '3.12'
-
-      - name: Install coverage-analytics
-        run: python3 -m pip install -e .
-
-      - name: Run Python regression tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-
-      - name: Generate Project
-        run: |
-          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
-            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_macos
-
-      - name: Build, Run Tests, and Generate Coverage
-        run: cmake --build build --config Debug --target generate_profile_data
-
-      - name: Upload coverage website data
-        uses: actions/upload-artifact@main
-        with:
-          name: coverage-data-macos
+          name: coverage-data-${{ matrix.platform }}
           path: website/data
           if-no-files-found: error
 
       - name: Analyze PR coverage
-        if: github.event_name == 'pull_request'
+        if: matrix.platform == 'macos' && github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -143,47 +115,17 @@ jobs:
             --format json > diff-coverage.json
 
       - name: Upload diff coverage findings
-        if: always() && github.event_name == 'pull_request'
+        if: always() && matrix.platform == 'macos' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@main
         with:
           name: diff-coverage
           path: diff-coverage.json
           if-no-files-found: error
 
-  ios:
-    runs-on: macos-latest
-    name: iOS Simulator Build and Python Tests
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@main
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@main
-        with:
-          python-version: '3.12'
-
-      - name: Install coverage-analytics
-        run: python3 -m pip install -e .
-
-      - name: Run Python regression tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-
-      - name: Generate iOS Simulator Project
-        run: |
-          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
-            -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_ios
-
-      - name: Build iOS Simulator Target
-        run: cmake --build build --config Debug --target coverage_example
-
   deploy-pages:
     name: Deploy Pages
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: [macos, linux, windows, ios]
+    needs: [platform]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -276,21 +218,18 @@ jobs:
   coverage-gate:
     name: PR coverage gate
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-    needs: [macos, linux, windows, ios, deploy-pages]
+    needs: [platform, deploy-pages]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Verify coverage and deployment prerequisites
         env:
-          MACOS_RESULT: ${{ needs.macos.result }}
-          LINUX_RESULT: ${{ needs.linux.result }}
-          WINDOWS_RESULT: ${{ needs.windows.result }}
-          IOS_RESULT: ${{ needs.ios.result }}
+          PLATFORM_RESULT: ${{ needs.platform.result }}
           DEPLOY_RESULT: ${{ needs.deploy-pages.result }}
           IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
-          for result in "$MACOS_RESULT" "$LINUX_RESULT" "$WINDOWS_RESULT" "$IOS_RESULT"; do
+          for result in "$PLATFORM_RESULT"; do
             if [[ "$result" != "success" ]]; then
               echo "::error::All platform validation jobs must succeed before enforcing coverage."
               exit 1

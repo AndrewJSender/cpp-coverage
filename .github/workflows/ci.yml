@@ -88,6 +88,12 @@ jobs:
       - name: Build, Run Tests, and Generate Coverage
         run: cmake --build build ${{ matrix.build_args }} --target ${{ matrix.build_target }}
 
+      - name: Build example with MSVC
+        if: matrix.platform == 'windows'
+        run: |
+          cmake -G "Visual Studio 17 2022" -S example -B build-msvc -DENABLE_COVERAGE=OFF
+          cmake --build build-msvc --config Debug --target coverage_example
+
       - name: Upload coverage website data
         if: matrix.upload_coverage
         uses: actions/upload-artifact@main

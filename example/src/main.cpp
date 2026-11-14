@@ -6,6 +6,7 @@
 
 int main() {
     std::cout << "Hello World\n";
+    std::cout << "Platform: " << CoverageClass::platformName() << '\n';
     CoverageClass coverage;
     coverage.functionCovered();
     return 0;

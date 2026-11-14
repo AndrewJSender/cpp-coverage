@@ -8,6 +8,7 @@ class CoverageClass {
 public:
     void functionCovered();
     void functionNotCovered();
+    static const char* platformName();
 };
 
 #endif // MY_LIB_HPP

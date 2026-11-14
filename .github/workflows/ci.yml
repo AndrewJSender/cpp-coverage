@@ -150,10 +150,40 @@ jobs:
           path: diff-coverage.json
           if-no-files-found: error
 
+  ios:
+    runs-on: macos-latest
+    name: iOS Simulator Build and Python Tests
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@main
+        with:
+          python-version: '3.12'
+
+      - name: Install coverage-analytics
+        run: python3 -m pip install -e .
+
+      - name: Run Python regression tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Generate iOS Simulator Project
+        run: |
+          cmake -G Xcode -S example -B build -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+            -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_ios
+
+      - name: Build iOS Simulator Target
+        run: cmake --build build --config Debug --target coverage_example
+
   deploy-pages:
     name: Deploy Pages
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    needs: [macos, linux, windows]
+    needs: [macos, linux, windows, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -246,7 +276,7 @@ jobs:
   coverage-gate:
     name: PR coverage gate
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-    needs: [macos, linux, windows, deploy-pages]
+    needs: [macos, linux, windows, ios, deploy-pages]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -256,12 +286,13 @@ jobs:
           MACOS_RESULT: ${{ needs.macos.result }}
           LINUX_RESULT: ${{ needs.linux.result }}
           WINDOWS_RESULT: ${{ needs.windows.result }}
+          IOS_RESULT: ${{ needs.ios.result }}
           DEPLOY_RESULT: ${{ needs.deploy-pages.result }}
           IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
-          for result in "$MACOS_RESULT" "$LINUX_RESULT" "$WINDOWS_RESULT"; do
+          for result in "$MACOS_RESULT" "$LINUX_RESULT" "$WINDOWS_RESULT" "$IOS_RESULT"; do
             if [[ "$result" != "success" ]]; then
-              echo "::error::All platform coverage jobs must succeed before enforcing coverage."
+              echo "::error::All platform validation jobs must succeed before enforcing coverage."
               exit 1
             fi
           done

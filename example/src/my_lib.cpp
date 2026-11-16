@@ -4,23 +4,20 @@
 #include <iostream>
 #include "my_lib.hpp"
 
-#if defined(_MSC_VER)
-#define COVERAGE_EXAMPLE_PLATFORM "MSVC"
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include <TargetConditionals.h>
-#if TARGET_OS_IPHONE
-#define COVERAGE_EXAMPLE_PLATFORM "iOS"
-#elif TARGET_OS_OSX
-#define COVERAGE_EXAMPLE_PLATFORM "macOS"
-#else
-#define COVERAGE_EXAMPLE_PLATFORM "Apple"
-#endif
-#else
-#define COVERAGE_EXAMPLE_PLATFORM "Other"
 #endif
 
 const char* CoverageClass::platformName() {
-    return COVERAGE_EXAMPLE_PLATFORM;
+#if defined(_MSC_VER)
+    return "MSVC";
+#elif TARGET_OS_IPHONE
+    return "iOS";
+#elif TARGET_OS_OSX
+    return "macOS";
+#else
+    return "Other";
+#endif
 }
 
 void CoverageClass::functionCovered() {

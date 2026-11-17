@@ -2,12 +2,14 @@
   ".": {
     "functions": {
       "main": "main",
+      "?platformName@CoverageClass@@SAPEBDXZ": "?platformName@CoverageClass@@SAPEBDXZ",
       "?functionCovered@CoverageClass@@QEAAXXZ": "?functionCovered@CoverageClass@@QEAAXXZ",
       "?functionNotCovered@CoverageClass@@QEAAXXZ": "?functionNotCovered@CoverageClass@@QEAAXXZ"
     },
     "scopes": {
       "CoverageClass": {
         "functions": {
+          "platformName()": "CoverageClass::platformName()",
           "functionCovered()": "CoverageClass::functionCovered()",
           "functionNotCovered()": "CoverageClass::functionNotCovered()"
         },

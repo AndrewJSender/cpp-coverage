@@ -1,12 +1,29 @@
 <?xml version="1.0" ?>
 <!DOCTYPE coverage
   SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
-<coverage branch-rate="0.25" branches-covered="1" branches-valid="4" complexity="0" line-rate="0.7222222222222222" lines-covered="13" lines-valid="18" timestamp="1794597662" version="2.0.3">
+<coverage branch-rate="0.25" branches-covered="1" branches-valid="4" complexity="0" line-rate="0.7619047619047619" lines-covered="16" lines-valid="21" timestamp="1794885192" version="2.0.3">
 	<sources>
 		<source>/Users/runner/work/cpp-coverage/cpp-coverage</source>
 	</sources>
 	<packages>
-		<package line-rate="0.7222222222222222" branch-rate="0.25" name="example.src" complexity="0">
+		<package line-rate="1.0" branch-rate="0.0" name="example.include" complexity="0">
+			<classes>
+				<class branch-rate="0.0" complexity="0" filename="example/include/my_lib.hpp" line-rate="1.0" name="example.include.my_lib.hpp">
+					<methods>
+						<method name="CoverageClass::platformName()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="15" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="1" number="15"/>
+						<line branch="false" hits="1" number="25"/>
+					</lines>
+				</class>
+			</classes>
+		</package>
+		<package line-rate="0.7368421052631579" branch-rate="0.25" name="example.src" complexity="0">
 			<classes>
 				<class branch-rate="0.0" complexity="0" filename="example/src/main.cpp" line-rate="1.0" name="example.src.main.cpp">
 					<methods>
@@ -23,6 +40,7 @@
 						<line branch="false" hits="1" number="10"/>
 						<line branch="false" hits="1" number="11"/>
 						<line branch="false" hits="1" number="12"/>
+						<line branch="false" hits="1" number="13"/>
 					</lines>
 				</class>
 				<class branch-rate="0.25" complexity="0" filename="example/src/my_lib.cpp" line-rate="0.5833333333333334" name="example.src.my_lib.cpp">

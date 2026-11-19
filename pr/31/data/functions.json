@@ -1,0 +1,20 @@
+{
+  ".": {
+    "functions": {
+      "main": "main",
+      "?functionCovered@CoverageClass@@QEAAXXZ": "?functionCovered@CoverageClass@@QEAAXXZ",
+      "?functionNotCovered@CoverageClass@@QEAAXXZ": "?functionNotCovered@CoverageClass@@QEAAXXZ",
+      "?platformName@CoverageClass@@QEAAPEBDXZ": "?platformName@CoverageClass@@QEAAPEBDXZ"
+    },
+    "scopes": {
+      "CoverageClass": {
+        "functions": {
+          "functionCovered()": "CoverageClass::functionCovered()",
+          "functionNotCovered()": "CoverageClass::functionNotCovered()",
+          "platformName()": "CoverageClass::platformName()"
+        },
+        "scopes": {}
+      }
+    }
+  }
+}

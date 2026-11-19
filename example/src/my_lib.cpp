@@ -4,6 +4,10 @@
 #include <iostream>
 #include "my_lib.hpp"
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 void CoverageClass::functionCovered() {
     int x = 42;
     bool regionNotCovered = true;
@@ -18,3 +22,15 @@ void CoverageClass::functionCovered() {
 }
 
 void CoverageClass::functionNotCovered() {}
+
+const char* CoverageClass::platformName() {
+#if defined(_MSC_VER)
+    return "MSVC";
+#elif defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    return "iOS";
+#elif defined(TARGET_OS_OSX) && TARGET_OS_OSX
+    return "macOS";
+#else
+    return "Other";
+#endif
+}

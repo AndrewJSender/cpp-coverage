@@ -85,7 +85,7 @@ jobs:
             ${{ matrix.configure_args }} \
             -DCOVERAGE_OUTPUT_DIR=build/coverage_example_output_${{ matrix.platform }}
 
-      - name: Build, Run Tests, and Generate Coverage
+      - name: Build, Run, and Generate Coverage
         run: cmake --build build ${{ matrix.build_args }} --target ${{ matrix.build_target }}
 
       - name: Build example with MSVC

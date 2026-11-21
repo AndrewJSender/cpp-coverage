@@ -24,13 +24,15 @@ void CoverageClass::functionCovered() {
 void CoverageClass::functionNotCovered() {}
 
 const char* CoverageClass::platformName() {
+    std::string platform_name;
 #if defined(_MSC_VER)
-    return "MSVC";
+    platform_name = "MSVC";
 #elif defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
-    return "iOS";
+    platform_name = "iOS";
 #elif defined(TARGET_OS_OSX) && TARGET_OS_OSX
-    return "macOS";
+    platform_name = "macOS";
 #else
-    return "Other";
+    platform_name = "Other";
 #endif
+    return platform_name.c_str();
 }

@@ -312,7 +312,7 @@ class GitIntegrationTests(unittest.TestCase):
             result["validation"]["errors"][0]["message"],
         )
 
-    def analyze(self, reports, changed=None, scope="diff", metrics=None):
+    def analyze(self, reports, changed=None, scope="diff", metrics=None, allow_missing=()):
         paths = []
         for index, report in enumerate(reports):
             path = self.repo / f"coverage-{index}.json"
@@ -323,7 +323,7 @@ class GitIntegrationTests(unittest.TestCase):
         counts = load_coverage(paths, self.repo, evidence)
         result = compare_coverage(changes, counts)
         analyze_details(self.repo, ["HEAD"], changes, evidence, result,
-                        metrics or ["lines", "regions", "branches"], scope)
+                        metrics or ["lines", "regions", "branches"], scope, allow_missing)
         return result
 
     def test_regions_and_branches_fail_a_covered_line_without_double_counting(self):
@@ -393,6 +393,20 @@ class GitIntegrationTests(unittest.TestCase):
         file["filename"] = "other.cpp"
         result = self.analyze([report])
         self.assertEqual(result["summary"]["missing"], 1)
+        self.assertEqual(result["gate"]["uncovered"], 1)
+
+    def test_allow_missing_globs_exempt_absent_files_from_gate(self):
+        report = self.details()
+        report["data"][0]["files"][0]["filename"] = "other.cpp"
+        result = self.analyze([report], allow_missing=["*.cpp"])
+        self.assertEqual(result["summary"]["missing"], 1)
+        self.assertEqual(result["gate"]["uncovered"], 0)
+        self.assertEqual(result["gate"]["lines"], [])
+        self.assertEqual(result["policy"]["allow_missing"], ["*.cpp"])
+        result = self.analyze([report], allow_missing=["*.hpp"])
+        self.assertEqual(result["gate"]["uncovered"], 1)
+        # Files present in a report are still gated even when the glob matches.
+        result = self.analyze([self.details()], allow_missing=["*.cpp"])
         self.assertEqual(result["gate"]["uncovered"], 1)
 
     def test_regions_exclude_gaps_and_end_column_one_does_not_touch_next_line(self):

@@ -120,6 +120,7 @@ jobs:
           coverage-analytics diff "$BASE_SHA...HEAD" \
             --coverage build/coverage_example_output_macos \
             --include 'example/*.cpp' --include 'example/*.hpp' \
+            --allow-missing 'example/*.hpp' \
             "${LINK_ARGS[@]}" \
             --format json > diff-coverage.json
 

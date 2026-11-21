@@ -403,6 +403,7 @@ def validate_range(region: list, size: int) -> None:
 def analyze_details(
     repo: Path, revisions: list[str], changes: dict[str, dict[int, str]],
     evidence: list[dict], result: dict, metrics: list[str], scope: str,
+    allow_missing: list[str] = (),
 ) -> None:
     commits = diff_revisions(repo, revisions)
     target = commits[-1] if len(commits) == 2 else None
@@ -422,7 +423,10 @@ def analyze_details(
         fail(filename, list(changes[filename]), message)
 
     for item in result["lines"]:
-        if item["status"] == "missing" or ("lines" in metrics and item["status"] == "uncovered"):
+        if item["status"] == "missing":
+            if not any(fnmatchcase(item["file"], pattern) for pattern in allow_missing):
+                fail(item["file"], [item["line"]], item["status"])
+        elif "lines" in metrics and item["status"] == "uncovered":
             fail(item["file"], [item["line"]], item["status"])
 
     for filename, lines in changes.items():
@@ -618,7 +622,7 @@ def analyze_details(
     result.update({
         "schema_version": 1,
         "comparison": {"revisions": revisions, "destination_commit": expected_commit, "working_tree": target is None},
-        "policy": {"metrics": metrics, "scope": scope},
+        "policy": {"metrics": metrics, "scope": scope, "allow_missing": list(allow_missing)},
         "regions": region_items,
         "branches": list(branches.values()),
         "functions": list(functions.values()),
@@ -698,6 +702,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--format", choices=["text", "json"], default="text", help="Output format")
     parser.add_argument("--include", action="append", default=[], help="Repository-relative glob to include (repeatable)")
     parser.add_argument("--exclude", action="append", default=[], help="Repository-relative glob to exclude (repeatable)")
+    parser.add_argument(
+        "--allow-missing", action="append", default=[],
+        help="Repository-relative glob whose files may be absent from every coverage "
+        "report without failing the gate, e.g. declaration-only headers (repeatable); "
+        "files that do appear in a report are still fully checked",
+    )
     parser.add_argument("--metrics", nargs="+", choices=["lines", "regions", "branches"], default=["lines", "regions", "branches"])
     parser.add_argument("--scope", choices=["diff", "functions"], default="diff")
     parser.add_argument(
@@ -717,7 +727,10 @@ def main(argv: list[str] | None = None) -> int:
         }
         evidence: list[dict] = []
         result = compare_coverage(changes, load_coverage(args.coverage, repo, evidence))
-        analyze_details(repo, args.revisions, changes, evidence, result, args.metrics, args.scope)
+        analyze_details(
+            repo, args.revisions, changes, evidence, result,
+            args.metrics, args.scope, args.allow_missing,
+        )
         add_links(result, args.link_base)
     except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         message = error.stderr.strip() if isinstance(error, subprocess.CalledProcessError) else str(error)

@@ -35,6 +35,12 @@ The source view follows LLVM's line-count semantics: counts carry across
 multi-line regions, and multiple regions on a line use the maximum execution
 count rather than a sum. Red source highlights mark uncovered regions, including
 within otherwise covered lines; blank counts indicate non-instrumented lines.
+Lines inside preprocessor conditionals (`#if`/`#else`) are left unmapped by
+llvm-cov even when they execute; the line count mapping selector switches
+between "llvm-cov line counts" (matching LLVM HTML output) and
+"Executed-region line counts", which also counts such lines from their
+instrumented region data. The choice is stored in the `lineMapping` query
+parameter (`lineMapping=executed`) so it can be shared.
 Select an individual source report to compare it with its LLVM HTML output, or
 use "All reports (summed)" to add execution counts across loaded reports (not
 deduplicated coverage).

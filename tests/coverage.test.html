@@ -1,0 +1,98 @@
+<!-- Copyright (c) 2026 Andrew J. Sender (AndrewJ.Sender@gmail.com)
+     Licensed under the MIT License. See LICENSE for details.
+-->
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Source Coverage Tests</title>
+    <script src="../website/coverage.js"></script>
+  </head>
+  <body>
+    <h1>Source coverage regression tests</h1>
+    <ul id="results"></ul>
+    <p id="summary" role="status"></p>
+    <script>
+      const failures = [];
+
+      function test(name, body) {
+        let item = document.createElement("li");
+        try {
+          body();
+          item.textContent = `PASS ${name}`;
+        } catch (error) {
+          failures.push(name);
+          item.textContent = `FAIL ${name}: ${error.message}`;
+        }
+        document.getElementById("results").appendChild(item);
+      }
+
+      function assert_equal(actual, expected, label) {
+        let actual_text = JSON.stringify(actual);
+        let expected_text = JSON.stringify(expected);
+        if (actual_text !== expected_text) {
+          throw new Error(`${label}: expected ${expected_text}, got ${actual_text}`);
+        }
+      }
+
+      // Segments mirror llvm-cov export for a preprocessor conditional:
+      // [line, column, count, has_count, is_region_entry, is_gap_region].
+      const conditional_lines = [
+        "std::string platformName() {",        // 1
+        "    std::string platform_name;",      // 2
+        "#if defined(_MSC_VER)",               // 3
+        '    platform_name = "MSVC";',         // 4
+        "#else",                               // 5
+        '    platform_name = "macOS";',        // 6
+        "#endif",                              // 7
+        "    return platform_name;",           // 8
+        "}"                                    // 9
+      ];
+      const conditional_segments = [
+        [1, 28, 3, true, true, false],
+        [3, 1, 0, false, true, false],   // skipped region: #if + inactive branch
+        [6, 1, 3, true, false, false],   // active branch resumes, not a region entry
+        [7, 1, 0, false, true, false],   // skipped region: #endif directive
+        [7, 7, 3, true, false, false],   // resumes after #endif text ends
+        [9, 2, 0, false, false, false]
+      ];
+
+      test("llvm mapping leaves preprocessor conditional lines unmapped", () => {
+        let coverage = build_line_coverage(conditional_lines, conditional_segments);
+        assert_equal(coverage.map(line => line.count),
+          [3, 3, null, null, null, null, null, 3, 3], "line counts");
+        assert_equal(coverage[5].ranges,
+          [{ start: 0, end: conditional_lines[5].length, count: 3 }],
+          "active branch ranges");
+      });
+
+      test("executed mapping counts the active preprocessor branch", () => {
+        let coverage = build_line_coverage(conditional_lines, conditional_segments, true);
+        assert_equal(coverage.map(line => line.count),
+          [3, 3, null, null, null, 3, null, 3, 3], "line counts");
+      });
+
+      test("executed mapping marks unexecuted resumed regions uncovered", () => {
+        let segments = conditional_segments.map(segment =>
+          [segment[0], segment[1], 0, segment[3], segment[4], segment[5]]);
+        let coverage = build_line_coverage(conditional_lines, segments, true);
+        assert_equal(coverage[5].count, 0, "active branch count");
+      });
+
+      test("cobertura line hits are unchanged by executed mapping", () => {
+        let lines = ["int main() {", "    return 0;", "}"];
+        let segments = [[1, 0, 2, true, true, false], [2, 0, 2, true, true, false]];
+        for (let executed of [false, true]) {
+          let coverage = build_line_coverage(lines, segments, executed);
+          assert_equal(coverage.map(line => line.count), [2, 2, null],
+            `line counts (executed_mapping=${executed})`);
+        }
+      });
+
+      document.getElementById("summary").textContent = failures.length
+        ? `${failures.length} test(s) failed.`
+        : "All tests passed.";
+    </script>
+  </body>
+</html>

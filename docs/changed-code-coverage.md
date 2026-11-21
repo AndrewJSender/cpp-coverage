@@ -71,6 +71,15 @@ Scope these explicitly to the languages and targets your reports instrument.
 Review any exclusion as a coverage exception, rather than automatically exempting
 zero-hit code.
 
+Files without executable code (such as declaration-only headers) have no coverage
+mapping, so no report contains them and their changed lines are labeled `missing`.
+Use `--allow-missing 'include/*.hpp'` (same glob rules, repeatable) to keep such
+files from failing the gate while still analyzing them: a file matching the
+pattern is exempt only while absent from every report; once it gains executable
+code it appears in the reports and is fully checked. A matching file that simply
+was not built also passes, so scope these patterns to files expected to carry no
+executable code.
+
 Deleted lines, binary changes, submodules, and untracked files have no destination
 lines to analyze and are excluded. Renames are treated as deletion plus addition.
 Reports must describe the destination revision being compared. Generation records

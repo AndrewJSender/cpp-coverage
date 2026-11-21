@@ -23,7 +23,7 @@ void CoverageClass::functionCovered() {
 
 void CoverageClass::functionNotCovered() {}
 
-const char* CoverageClass::platformName() {
+std::string CoverageClass::platformName() {
     std::string platform_name;
 #if defined(_MSC_VER)
     platform_name = "MSVC";
@@ -34,5 +34,5 @@ const char* CoverageClass::platformName() {
 #else
     platform_name = "Other";
 #endif
-    return platform_name.c_str();
+    return platform_name;
 }

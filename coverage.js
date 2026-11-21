@@ -411,7 +411,7 @@ function update_source_selection_url_for_range(start, end) {
     };
 }
 
-function build_line_coverage(lines, segments) {
+function build_line_coverage(lines, segments, executed_mapping = false) {
     let coverage = lines.map(() => ({ count: null, ranges: [] }));
     // Cobertura-derived reports use column zero for independent line hits.
     if (segments.every(segment => segment[1] === 0)) {
@@ -455,6 +455,11 @@ function build_line_coverage(lines, segments) {
         if (active?.[3] && !active[5] && start < lines[line - 1].length) {
             stats.ranges.push({ start, end: lines[line - 1].length, count: active[2] });
         }
+        // llvm-cov leaves lines unmapped when a skipped preprocessor region
+        // wraps them; executed mapping counts their instrumented ranges instead.
+        if (executed_mapping && stats.count === null && stats.ranges.length) {
+            stats.count = Math.max(...stats.ranges.map(range => range.count));
+        }
         if (line_segments.length) {
             wrapped = line_segments[line_segments.length - 1];
         }
@@ -467,9 +472,10 @@ function render_source_coverage() {
         return;
     }
     let selected = document.getElementById("source_report").value;
+    let executed_mapping = document.getElementById("line_mapping").value === "executed";
     let reports = [...source_report_state.reports.entries()]
         .filter(([platform]) => selected === "" || platform === selected)
-        .map(([, details]) => build_line_coverage(source_report_state.lines, details.segments));
+        .map(([, details]) => build_line_coverage(source_report_state.lines, details.segments, executed_mapping));
     let body = document.getElementById("file_details_table_body");
     body.replaceChildren();
     let selection_target = null;
@@ -544,6 +550,9 @@ function render_source_coverage() {
         status = selected === "" && reports.length > 1
             ? `${reports.length} loaded reports summed. Select a report to compare with its LLVM HTML.`
             : "Line counts and uncovered regions for the selected report. Blank counts are not instrumented.";
+        if (executed_mapping) {
+            status += " Executed-region mapping also counts executed lines inside preprocessor conditionals.";
+        }
     }
     document.getElementById("source_status").textContent = status;
     if (source_selection) {
@@ -573,7 +582,7 @@ function handle_files_data (path, manifest_data, files_data) {
         list_item.appendChild(anchor);
         coverage_ul.appendChild(list_item);
 
-        fetch(`${coverage_path}/coverage_details.json`)
+        fetch(`${coverage_path}/coverage_details.json`, { cache: "no-store" })
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}`);
@@ -590,13 +599,13 @@ function handle_files_data (path, manifest_data, files_data) {
                 complete_function_report();
             });
 
-        fetch(`${coverage_path}/${coverage_file}`).then(response => response.json()).then(summary_data => {
+        fetch(`${coverage_path}/${coverage_file}`, { cache: "no-store" }).then(response => response.json()).then(summary_data => {
             console.debug("Summary: ", summary_data);
             update_summary_table(path, platform, summary_data);
             if (document.getElementById("file_details_div").hidden) {
                 console.debug("File details hidden");
             } else {
-                fetch(`${coverage_path}/code_coverage_details/${path}.json`).then(response => {
+                fetch(`${coverage_path}/code_coverage_details/${path}.json`, { cache: "no-store" }).then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
@@ -903,6 +912,20 @@ function on_load() {
     document.getElementById("function_filter").addEventListener("change", apply_function_filters);
     document.getElementById("function_search").addEventListener("input", apply_function_filters);
     document.getElementById("source_report").addEventListener("change", render_source_coverage);
+    const line_mapping = document.getElementById("line_mapping");
+    if (urlParams.get("lineMapping") === "executed") {
+        line_mapping.value = "executed";
+    }
+    line_mapping.addEventListener("change", () => {
+        let url = new URL(window.location.href);
+        if (line_mapping.value === "executed") {
+            url.searchParams.set("lineMapping", "executed");
+        } else {
+            url.searchParams.delete("lineMapping");
+        }
+        window.history.replaceState(null, "", url);
+        render_source_coverage();
+    });
     document.addEventListener("selectionchange", update_source_selection_url);
     const view_tabs = ["path_tab", "function_tab"].map(id => document.getElementById(id));
     view_tabs.forEach((tab, index) => {

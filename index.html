@@ -146,6 +146,11 @@
             <h2>File details</h2>
           </div>
           <div class="function-controls">
+            <label class="visually-hidden" for="line_mapping">Line count mapping</label>
+            <select id="line_mapping">
+              <option value="llvm">llvm-cov line counts</option>
+              <option value="executed">Executed-region line counts</option>
+            </select>
             <label class="visually-hidden" for="source_report">Source coverage report</label>
             <select id="source_report" disabled>
               <option value="">All reports (summed)</option>

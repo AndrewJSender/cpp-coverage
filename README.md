@@ -43,6 +43,7 @@ for setup steps and a real pull request example.
 ### Reference
 
 - [Coverage tools and report formats](docs/reference.md)
+- [Releasing](docs/releasing.md)
 
 ## License
 

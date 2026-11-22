@@ -1,0 +1,21 @@
+{
+  ".": {
+    "functions": {
+      "main": "main",
+      "?functionCovered@CoverageClass@@QEAAXXZ": "?functionCovered@CoverageClass@@QEAAXXZ",
+      "?functionNotCovered@CoverageClass@@QEAAXXZ": "?functionNotCovered@CoverageClass@@QEAAXXZ",
+      "?platformName@CoverageClass@@QEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ": "?platformName@CoverageClass@@QEAA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ"
+    },
+    "scopes": {
+      "CoverageClass": {
+        "functions": {
+          "functionCovered()": "CoverageClass::functionCovered()",
+          "functionNotCovered()": "CoverageClass::functionNotCovered()",
+          "platformName()": "CoverageClass::platformName()",
+          "platformName[abi:cxx11]()": "CoverageClass::platformName[abi:cxx11]()"
+        },
+        "scopes": {}
+      }
+    }
+  }
+}

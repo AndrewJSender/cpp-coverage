@@ -1,0 +1,18 @@
+{
+  "coverage_example_output_ios": {
+    "path": "data/local/coverage_example_output_ios",
+    "coverage_file": "coverage_summary.json"
+  },
+  "coverage_example_output_linux": {
+    "path": "data/local/coverage_example_output_linux",
+    "coverage_file": "coverage_summary.json"
+  },
+  "coverage_example_output_macos": {
+    "path": "data/local/coverage_example_output_macos",
+    "coverage_file": "coverage_summary.json"
+  },
+  "coverage_example_output_windows": {
+    "path": "data/local/coverage_example_output_windows",
+    "coverage_file": "coverage_summary.json"
+  }
+}

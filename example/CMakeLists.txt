@@ -11,6 +11,13 @@ option(ENABLE_COVERAGE "Enable LLVM or Bullseye coverage instrumentation" OFF)
 set(COVERAGE_TOOL "llvm" CACHE STRING "Coverage tool (llvm or bullseye)")
 set_property(CACHE COVERAGE_TOOL PROPERTY STRINGS llvm bullseye)
 
+string(TOLOWER "${CMAKE_OSX_SYSROOT}" coverage_osx_sysroot)
+if(CMAKE_GENERATOR STREQUAL "Xcode" AND CMAKE_SYSTEM_NAME STREQUAL "iOS"
+   AND coverage_osx_sysroot MATCHES "iphonesimulator")
+    # Keep Xcode's SDK suffix out of target paths consumed by CTest.
+    set_property(GLOBAL PROPERTY XCODE_EMIT_EFFECTIVE_PLATFORM_NAME OFF)
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     # Lets ctest run simulator binaries through `simctl spawn`.
     set(CMAKE_CROSSCOMPILING_EMULATOR

@@ -49,6 +49,23 @@ export root_path=$(pwd)
 cmake --build "$root_path/build" --target generate_profile_data
 ```
 
+### iOS Simulator Coverage
+
+Use a separate build directory for the simulator SDK:
+
+```zsh
+cmake -G Xcode -S example -B build-ios \
+ -DENABLE_COVERAGE=ON -DCOVERAGE_TOOL=llvm \
+ -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator \
+ -DCMAKE_OSX_ARCHITECTURES=arm64 \
+ -DCOVERAGE_OUTPUT_DIR=build-ios/coverage_example_output_ios
+cmake --build build-ios --config Debug --target generate_profile_data
+```
+
+The test launcher boots an available iPhone simulator and produces website
+data under `website/data`. Set `IOS_SIMULATOR_DEVICE` to select a simulator
+by name or UDID.
+
 ### Build, Test, Generate Step-by-Step
 
 #### Select Target

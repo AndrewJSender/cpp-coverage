@@ -55,8 +55,8 @@ jobs:
             generator: Xcode
             configure_args: -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_ARCHITECTURES=arm64
             build_args: --config Debug
-            build_target: coverage_example
-            upload_coverage: false
+            build_target: generate_profile_data
+            upload_coverage: true
     steps:
       - name: Check out repository
         uses: actions/checkout@main

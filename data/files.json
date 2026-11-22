@@ -9,6 +9,11 @@
           "my_lib.hpp": "./example/include/my_lib.hpp"
         }
       },
+      "scripts": {
+        "files": {
+          "ios_simulator_run.py": "./example/scripts/ios_simulator_run.py"
+        }
+      },
       "src": {
         "files": {
           "my_lib.cpp": "./example/src/my_lib.cpp",

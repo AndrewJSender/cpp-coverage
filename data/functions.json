@@ -11,8 +11,8 @@
         "functions": {
           "functionCovered()": "CoverageClass::functionCovered()",
           "functionNotCovered()": "CoverageClass::functionNotCovered()",
-          "platformName[abi:cxx11]()": "CoverageClass::platformName[abi:cxx11]()",
-          "platformName()": "CoverageClass::platformName()"
+          "platformName()": "CoverageClass::platformName()",
+          "platformName[abi:cxx11]()": "CoverageClass::platformName[abi:cxx11]()"
         },
         "scopes": {}
       }

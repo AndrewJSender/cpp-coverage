@@ -11,6 +11,12 @@ option(ENABLE_COVERAGE "Enable LLVM or Bullseye coverage instrumentation" OFF)
 set(COVERAGE_TOOL "llvm" CACHE STRING "Coverage tool (llvm or bullseye)")
 set_property(CACHE COVERAGE_TOOL PROPERTY STRINGS llvm bullseye)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS" AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+    # Lets ctest run simulator binaries through `simctl spawn`.
+    set(CMAKE_CROSSCOMPILING_EMULATOR
+        "${Python3_EXECUTABLE};${CMAKE_CURRENT_SOURCE_DIR}/scripts/ios_simulator_run.py")
+endif()
+
 add_executable(coverage_example src/main.cpp src/my_lib.cpp)
 target_include_directories(coverage_example PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 

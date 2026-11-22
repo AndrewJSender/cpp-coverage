@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<!DOCTYPE coverage
+  SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>
+<coverage branch-rate="0.25" branches-covered="1" branches-valid="4" complexity="0" line-rate="0.7916666666666666" lines-covered="19" lines-valid="24" timestamp="1795373416" version="2.0.3">
+	<sources>
+		<source>/home/runner/work/cpp-coverage/cpp-coverage</source>
+	</sources>
+	<packages>
+		<package line-rate="0.7916666666666666" branch-rate="0.25" name="example.src" complexity="0">
+			<classes>
+				<class branch-rate="0.0" complexity="0" filename="example/src/main.cpp" line-rate="1.0" name="example.src.main.cpp">
+					<methods>
+						<method name="main" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="7" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="1" number="7"/>
+						<line branch="false" hits="1" number="8"/>
+						<line branch="false" hits="1" number="9"/>
+						<line branch="false" hits="1" number="10"/>
+						<line branch="false" hits="1" number="11"/>
+						<line branch="false" hits="1" number="12"/>
+					</lines>
+				</class>
+				<class branch-rate="0.25" complexity="0" filename="example/src/my_lib.cpp" line-rate="0.7222222222222222" name="example.src.my_lib.cpp">
+					<methods>
+						<method name="CoverageClass::functionCovered()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="11" branch="false"/>
+							</lines>
+						</method>
+						<method name="CoverageClass::functionNotCovered()" signature="" line-rate="0.0" branch-rate="0.0">
+							<lines>
+								<line hits="0" number="24" branch="false"/>
+							</lines>
+						</method>
+						<method name="CoverageClass::platformName[abi:cxx11]()" signature="" line-rate="1.0" branch-rate="1.0">
+							<lines>
+								<line hits="1" number="26" branch="false"/>
+							</lines>
+						</method>
+					</methods>
+					<lines>
+						<line branch="false" hits="1" number="11"/>
+						<line branch="false" hits="1" number="12"/>
+						<line branch="false" hits="1" number="13"/>
+						<line branch="true" hits="1" number="14" condition-coverage="25% (1/4)"/>
+						<line branch="false" hits="1" number="15"/>
+						<line branch="false" hits="1" number="16"/>
+						<line branch="false" hits="0" number="17"/>
+						<line branch="false" hits="0" number="18"/>
+						<line branch="false" hits="1" number="20"/>
+						<line branch="false" hits="0" number="21"/>
+						<line branch="false" hits="0" number="22"/>
+						<line branch="false" hits="0" number="24"/>
+						<line branch="false" hits="1" number="26"/>
+						<line branch="false" hits="1" number="27"/>
+						<line branch="false" hits="1" number="35"/>
+						<line branch="false" hits="1" number="36"/>
+						<line branch="false" hits="1" number="37"/>
+						<line branch="false" hits="1" number="38"/>
+					</lines>
+				</class>
+			</classes>
+		</package>
+	</packages>
+</coverage>
